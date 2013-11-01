@@ -36,7 +36,9 @@
 #define END 9
 #define FAIL 10
 
-#define TURNSPEED 75
+#define TURNSPEED 50
+#define DRIVESPEED 50
+#define LINEFOLLOWRATIO 0.50
 
 typedef struct{
 	int currentState;
@@ -47,7 +49,7 @@ typedef struct{
 	int irDir;
 	int dist;
 	int time;
-	int degrees;
+	float degrees;
 } State;
 
 void initialize(State *state);
@@ -58,8 +60,8 @@ void showDiagnostics(State *state);
 
 void initialize(State *state){
 	memset(state, 0, sizeof(state));
-	state->leftSpeed = 75;
-	state->rightSpeed = 75;
+	state->leftSpeed = DRIVESPEED;
+	state->rightSpeed = DRIVESPEED;
 
 	// Calibrate the gyro, make sure you hold the sensor still
 	HTGYROstartCal(HTGYRO);
@@ -72,6 +74,7 @@ task main() {
 	initialize(&state);
 
 	//waitForStart();
+	wait1Msec(1000);
 
 	PlayTone(500, 10);
 	time1[T1] = 0;
@@ -80,7 +83,7 @@ task main() {
 
 		drive(&state);
 
-		if(state.irDir == 5 || time1[T1] >= 5000){
+		if(state.irDir == 5 || time1[T1] >= 3000){
 
 			state.currentState = FAIL;
 
@@ -90,6 +93,7 @@ task main() {
 
 		}
 	}
+
 
 	PlayTone(500, 10);
 	time1[T1] = 0;
@@ -104,22 +108,22 @@ task main() {
 
 		}else if(state.dist <= 45){
 
-			state.leftSpeed  = 75;
-			state.rightSpeed = 50;
+			state.leftSpeed  = DRIVESPEED*LINEFOLLOWRATIO;
+			state.rightSpeed = DRIVESPEED;
 
 		}else if(state.dist >= 55){
 
-			state.leftSpeed = 50;
-			state.rightSpeed = 75;
+			state.leftSpeed = DRIVESPEED;
+			state.rightSpeed = DRIVESPEED*LINEFOLLOWRATIO;
 
-		}else if(time1[T1] >= 5000){
+		}else if(time1[T1] >= 3000){
 
 			state.currentState = LINEFOLLOWER2;
 
 		}else { //in range between 45 and 55
 
-			state.leftSpeed = 75;
-			state.rightSpeed = 75;
+			state.leftSpeed = DRIVESPEED;
+			state.rightSpeed = DRIVESPEED;
 
 		}
 	}
@@ -152,8 +156,8 @@ task main() {
 
 		}else*/ if(state.dist <= 45){
 
-			state.leftSpeed  = 75;
-			state.rightSpeed = 50;
+			state.leftSpeed  = DRIVESPEED*LINEFOLLOWRATIO;
+			state.rightSpeed = DRIVESPEED;
 
 		}else if(state.dist >= 250){
 
@@ -161,17 +165,17 @@ task main() {
 
 		}else if(state.dist >= 55){
 
-			state.leftSpeed = 50;
-			state.rightSpeed = 75;
+			state.leftSpeed = DRIVESPEED;
+			state.rightSpeed = DRIVESPEED*LINEFOLLOWRATIO;
 
-		}else if(time1[T1] >= 5000){
+		}else if(time1[T1] >= 3000){
 
 			state.currentState = GOTOEND;
 
 		}else { //in range between 45 and 55
 
-			state.leftSpeed = 75;
-			state.rightSpeed = 75;
+			state.leftSpeed = DRIVESPEED;
+			state.rightSpeed = DRIVESPEED;
 
 		}
 	}
@@ -179,8 +183,9 @@ task main() {
 	PlayTone(500, 10);
 	time1[T1] = 0;
 	while(state.currentState == GOTOEND){
-		state.leftSpeed = 75;
-		state.rightSpeed = 75;
+		getSensors(&state);
+		state.leftSpeed = DRIVESPEED;
+		state.rightSpeed = DRIVESPEED;
 		drive(&state);
 
 		if(time1[T1] >= 2000){
@@ -189,16 +194,15 @@ task main() {
 	}
 
 	PlayTone(500, 10);
-	int gyroNum = 0;
 	time1[T1] = 0;
+	state.degrees = 0;
 	while(state.currentState == PARKSEQUENCE1){
-		state.leftSpeed = -TURNSPEED;
-		state.rightSpeed = TURNSPEED;
+		getSensors(&state);
+		state.leftSpeed = TURNSPEED;
+		state.rightSpeed = -TURNSPEED;
 		drive(&state);
 
-		getSensors(&state);
-		gyroNum += state.degrees;
-		if(gyroNum >= 90 || time1[T1] >= 500){
+		if(abs(state.degrees) >= 90){// || time1[T1] >= 500){
 			stopMotors();
 			state.currentState = PARKSEQUENCE2;
 		}
@@ -207,8 +211,9 @@ task main() {
 	PlayTone(500, 10);
 	time1[T1] = 0;
 	while(state.currentState == PARKSEQUENCE2){
-		state.leftSpeed = 75;
-		state.rightSpeed = 75;
+		getSensors(&state);
+		state.leftSpeed = DRIVESPEED;
+		state.rightSpeed = DRIVESPEED;
 		drive(&state);
 
 		if(time1[T1] >= 2000){
@@ -217,16 +222,15 @@ task main() {
 	}
 
 	PlayTone(500, 10);
-	gyroNum = 0;
 	time1[T1] = 0;
+	state.degrees = 0;
 	while(state.currentState == PARKSEQUENCE3){
-		drive(&state);
-		state.leftSpeed = -TURNSPEED;
-		state.rightSpeed = TURNSPEED;
-
 		getSensors(&state);
-		gyroNum += state.degrees;
-		if(gyroNum >= 90 || time1[T1] >= 500){
+		state.leftSpeed = TURNSPEED;
+		state.rightSpeed = -TURNSPEED;
+		drive(&state);
+
+		if(abs(state.degrees) >= 90){// || time1[T1] >= 500){
 			stopMotors();
 			state.currentState = PARKSEQUENCE4;
 		}
@@ -235,8 +239,9 @@ task main() {
 	PlayTone(500, 10);
 	time1[T1] = 0;
 	while(state.currentState == PARKSEQUENCE4){
-		state.leftSpeed = 75;
-		state.rightSpeed = 75;
+		getSensors(&state);
+		state.leftSpeed = DRIVESPEED;
+		state.rightSpeed = DRIVESPEED;
 		drive(&state);
 
 		if(time1[T1] >= 2000){
@@ -303,30 +308,22 @@ void getSensors(State *state){
 	//************************Gyro*****************************
 
 	float rotSpeed = 0;
-	float heading = 0;
-
-	// Reset the timer.
-	time1[T2] = 0;
 
 	// Wait until 20ms has passed
-	while (time1[T2] < 20){
-	      wait1Msec(1);
-	}
-
-	// Reset the timer
-	time1[T2]=0;
+	wait1Msec(20);
 
 	// Read the current rotation speed
 	rotSpeed = HTGYROreadRot(HTGYRO);
+	if (rotSpeed < 0) {
+		rotSpeed = rotSpeed * -1;
+	}
 
 	// Calculate the new heading by adding the amount of degrees
 	// we've turned in the last 20ms
 	// If our current rate of rotation is 100 degrees/second,
 	// then we will have turned 100 * (20/1000) = 2 degrees since
 	// the last time we measured.
-	heading += rotSpeed * 0.02;
-
-	state->degrees = heading;
+	state->degrees += rotSpeed * 0.02;
 
 	//*********************************************************
 
