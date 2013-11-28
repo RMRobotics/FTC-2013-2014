@@ -22,7 +22,6 @@
 #include "drivers/hitechnic-gyro.h"
 #include "drivers/hitechnic-accelerometer.h"
 
-
 const tMUXSensor HTACCEL = msensor_S4_1;
 const tMUXSensor sonar = msensor_S4_2;
 const tMUXSensor color = msensor_S4_3;
@@ -33,10 +32,13 @@ typedef struct {
 	int leftSpeed;
 	int rightSpeed;
 	int harvesterSpeed;
-	int hangSpeed;
-	//int lefthang;
-	//int righthang;
+	int leftHangS;
+	int rightHangS;
+	int stopper;
+	int auto;
 } joyState;
+
+int speedRef[129];
 
 void initialize(joyState *state);
 void updateInput(joyState *state);
@@ -49,6 +51,21 @@ task main()
 {
 	joyState currentState;
 	initialize(currentState);
+
+	for(int n = 0; n < 129; n++){
+		if(n<=16)
+			speedRef[n]=0;
+		else if(n<=32)
+			speedRef[n]=10;
+		else if(n<=64)
+			speedRef[n]= 50;
+		else if(n<=96)
+			speedRef[n] = n * (100.0 / 128.0) + 0.5;
+		else
+			speedRef[n]=100;
+	}
+
+	//waitForStart();
 
 	while(true){
 		updateInput(currentState);
@@ -64,16 +81,9 @@ void updateInput(joyState *state) {
 	getJoystickSettings(joystick);
 	memcpy(state->joy, joystick, sizeof(joystick));
 
-	if (abs(state->joy.joy1_y2) > 20) { // If left joystick is outside dead zone, move left tread, otherwise stop.
-		state->leftSpeed = state->joy.joy1_y2 * (100.0 / 128.0) + 0.5;
-	} else {
-		state->leftSpeed = 0;
-	}
-	if (abs(state->joy.joy1_y1) > 20) { // If right joystick is outside dead zone, move right tread, otherwise stop.
-		state->rightSpeed = state->joy.joy1_y1 * (100.0 / 128.0) + 0.5;
-	} else {
-		state->rightSpeed = 0;
-	}
+	state->leftSpeed = state->joy.joy1_y2/abs(state->joy.joy1_y2)*speedRef[abs(state->joy.joy1_y2)];
+	state->rightSpeed = state->joy.joy1_y1/abs(state->joy.joy1_y1)*speedRef[abs(state->joy.joy1_y1)];
+
 	if (joyButton(state->joy.joy1_Buttons, 1)) {
 		state->harvesterSpeed = 100;
 	} else if (joyButton(state->joy.joy1_Buttons, 2)) {
@@ -81,13 +91,37 @@ void updateInput(joyState *state) {
 	} else {
 		state->harvesterSpeed = 0;
 	}
-	if (joyButton(state->joy.joy1_Buttons, 3)) {
-		state->hangSpeed = 100;
-	} else if (joyButton(state->joy.joy1_Buttons, 4)) {
-		state->hangSpeed = -100;
+
+	if (joyButton(state->joy.joy1_Buttons, 7)) {
+		state->leftHangS = 100;
+	} else if (joyButton(state->joy.joy1_Buttons, 5)) {
+		state->leftHangS = -100;
 	} else {
-		state->hangSpeed = 0;
+		state->leftHangS = 0;
 	}
+
+	if (joyButton(state->joy.joy1_Buttons, 8)) {
+		state->rightHangS = 100;
+	} else if (joyButton(state->joy.joy1_Buttons, 6)) {
+		state->rightHangS = -100;
+	} else {
+		state->rightHangS = 0;
+	}
+
+	if (joyButton(state->joy.joy1_Buttons, 4)) {
+		state->stopper = 255;
+	} else if (joyButton(state->joy.joy1_Buttons, 3)) {
+		state->stopper = 120;
+	}
+
+	if (state->joy.joy1_TopHat == 0) {
+		state->auto = 240;
+	} else if (state->joy.joy1_TopHat == 4) {
+		state->auto = 0;
+	} else if (state->joy.joy1_TopHat == 2) {
+		state->auto = 120;
+	}
+
 }
 
 int joyButton(short bitmask, int button)
@@ -100,8 +134,10 @@ void updateRobot(joyState *state) {
 	motor[rightTread]=state->rightSpeed;
 	motor[leftTread]=state->leftSpeed;
 	motor[harvester]=state->harvesterSpeed;
-	motor[leftHang]=state->hangSpeed;
-	motor[rightHang]=state->hangSpeed;
+	motor[leftHang]=state->leftHangS;
+	motor[rightHang]=state->rightHangS;
+	servo[servo6]=state->stopper;
+	servo[servo5]=state->auto;
 }
 
 void stopRobot(joyState *state) {
@@ -110,6 +146,8 @@ void stopRobot(joyState *state) {
 	motor[harvester]=0;
 	motor[leftHang]=0;
 	motor[rightHang]=0;
+	servo[servo6]=0;
+	servo[servo5]=0;
 }
 
 void showDiagnostics(joyState *state) {
