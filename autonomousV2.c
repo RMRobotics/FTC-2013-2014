@@ -83,7 +83,7 @@ task main() {
 	//waitForStart();
 	state.lastSensorCheckTime = time1[T2];
 
-	PlayTone(500, 10);
+	PlayTone(500, 1);
 	time1[T1] = 0;
 	while(state.currentState == FINDLINE){
 		getSensors(&state);
@@ -102,7 +102,7 @@ task main() {
 	}
 
 
-	PlayTone(500, 10);
+	PlayTone(500, 1);
 	time1[T1] = 0;
 	while(state.currentState == LINEFOLLOWER1){
 		getSensors(&state);
@@ -135,7 +135,7 @@ task main() {
 		}
 	}
 
-	PlayTone(500, 10);
+	PlayTone(500,1);
 	time1[T1] = 0;
 	while(state.currentState == SCOREBLOCK){
 		getSensors(&state);
@@ -150,7 +150,7 @@ task main() {
 		}
 	}
 
-	PlayTone(500, 10);
+	PlayTone(500,1);
 	time1[T1] = 0;
 	while(state.currentState == LINEFOLLOWER2){
 		getSensors(&state);
@@ -187,7 +187,7 @@ task main() {
 		}
 	}
 
-	PlayTone(500, 10);
+	PlayTone(500,1);
 	time1[T1] = 0;
 	while(state.currentState == GOTOEND){
 		getSensors(&state);
@@ -201,7 +201,7 @@ task main() {
 	}
 
 	state.currentState = PARKSEQUENCE1;
-	PlayTone(500, 10);
+	PlayTone(500,1);
 	time1[T1] = 0;
 	resetGyroAccel(&state);
 	while(state.currentState == PARKSEQUENCE1){
@@ -216,7 +216,7 @@ task main() {
 		}
 	}
 
-	PlayTone(500, 10);
+	PlayTone(500,1);
 	time1[T1] = 0;
 	while(state.currentState == PARKSEQUENCE2){
 		getSensors(&state);
@@ -229,7 +229,7 @@ task main() {
 		}
 	}
 
-	PlayTone(500, 10);
+	PlayTone(500,1);
 	time1[T1] = 0;
 	resetGyroAccel(&state);
 	while(state.currentState == PARKSEQUENCE3){
@@ -244,7 +244,7 @@ task main() {
 		}
 	}
 
-	PlayTone(500, 10);
+	PlayTone(500,1);
 	time1[T1] = 0;
 	while(state.currentState == PARKSEQUENCE4){
 		getSensors(&state);
@@ -258,12 +258,12 @@ task main() {
 		}
 	}
 
-	PlayTone(500, 10);
+	PlayTone(500,1);
 	while(state.currentState == END){
 
 	}
 
-	PlayTone(500, 10);
+	PlayTone(500,1);
 	while(state.currentState == FAIL){
 		stopMotors();
 		state.currentState = END;
@@ -327,11 +327,11 @@ void getSensors(State *state){
 	} else {
 		PlayTone(700, 1000);
 		eraseDisplay();
-			string errorDisplay;
-			sprintf(errorDisplay, "missed %d",(int)(time1[T2] - state->lastSensorCheckTime));
-			nxtDisplayTextLine(3, errorDisplay);
-			stopMotors();
-			wait1Msec(100000000000);
+		string errorDisplay;
+		sprintf(errorDisplay, "missed %d",(int)(time1[T2] - state->lastSensorCheckTime));
+		nxtDisplayTextLine(3, errorDisplay);
+		stopMotors();
+		wait1Msec(100000000000);
 		state->lastSensorCheckTime = time1[T2];
 	}
 

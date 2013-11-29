@@ -32,8 +32,8 @@ typedef struct {
 	int leftSpeed;
 	int rightSpeed;
 	int harvesterSpeed;
-	int leftHangS;
-	int rightHangS;
+	int leftHangSpeed;
+	int rightHangSpeed;
 	int stopper;
 	int auto;
 } joyState;
@@ -43,7 +43,6 @@ int speedRef[129];
 void initialize(joyState *state);
 void updateInput(joyState *state);
 void updateRobot(joyState *state);
-void stopRobot(joyState *state);
 void showDiagnostics(joyState *state);
 int joyButton(short bitmask, int button);
 
@@ -70,6 +69,7 @@ task main()
 	while(true){
 		updateInput(currentState);
 		updateRobot(currentState);
+		showDiagnostics(currentState);
 	}
 }
 
@@ -93,19 +93,19 @@ void updateInput(joyState *state) {
 	}
 
 	if (joyButton(state->joy.joy1_Buttons, 7)) {
-		state->leftHangS = 100;
+		state->leftHangSpeed = 100;
 	} else if (joyButton(state->joy.joy1_Buttons, 5)) {
-		state->leftHangS = -100;
+		state->leftHangSpeed = -100;
 	} else {
-		state->leftHangS = 0;
+		state->leftHangSpeed = 0;
 	}
 
 	if (joyButton(state->joy.joy1_Buttons, 8)) {
-		state->rightHangS = 100;
+		state->rightHangSpeed = 100;
 	} else if (joyButton(state->joy.joy1_Buttons, 6)) {
-		state->rightHangS = -100;
+		state->rightHangSpeed = -100;
 	} else {
-		state->rightHangS = 0;
+		state->rightHangSpeed = 0;
 	}
 
 	if (joyButton(state->joy.joy1_Buttons, 4)) {
@@ -134,8 +134,8 @@ void updateRobot(joyState *state) {
 	motor[rightTread]=state->rightSpeed;
 	motor[leftTread]=state->leftSpeed;
 	motor[harvester]=state->harvesterSpeed;
-	motor[leftHang]=state->leftHangS;
-	motor[rightHang]=state->rightHangS;
+	motor[leftHang]=state->leftHangSpeed;
+	motor[rightHang]=state->rightHangSpeed;
 	servo[servo6]=state->stopper;
 	servo[servo5]=state->auto;
 }
@@ -151,6 +151,18 @@ void stopRobot(joyState *state) {
 }
 
 void showDiagnostics(joyState *state) {
+	//create label
+	string batteryLevel = "power = ";
+
+	//store variable in a string
+	string string5 = externalBatteryAvg;
+
+	//concat variable with label
+	strcat(batteryLevel, string5);
+
 	eraseDisplay();
-	nxtDisplayTextLine(1, "TeleOp");
+
+	//display label and value
+	nxtDisplayTextLine(3, "Teleop");
+	nxtDisplayTextLine(5, batteryLevel);
 }
