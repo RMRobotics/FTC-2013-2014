@@ -22,7 +22,6 @@
 #include "drivers/hitechnic-gyro.h"
 #include "drivers/hitechnic-accelerometer.h"
 
-
 const tMUXSensor HTACCEL = msensor_S4_1;
 const tMUXSensor sonar = msensor_S4_2;
 const tMUXSensor color = msensor_S4_3;
@@ -33,15 +32,14 @@ typedef struct {
 	int leftSpeed;
 	int rightSpeed;
 	int harvesterSpeed;
-	int hangSpeed;
-	//int lefthang;
-	//int righthang;
+	int leftHangSpeed;
+	int rightHangSpeed;
+
 } joyState;
 
 void initialize(joyState *state);
 void updateInput(joyState *state);
 void updateRobot(joyState *state);
-void stopRobot(joyState *state);
 void showDiagnostics(joyState *state);
 int joyButton(short bitmask, int button);
 
@@ -53,6 +51,7 @@ task main()
 	while(true){
 		updateInput(currentState);
 		updateRobot(currentState);
+		showDiagnostics(currentState);
 	}
 }
 
@@ -82,11 +81,14 @@ void updateInput(joyState *state) {
 		state->harvesterSpeed = 0;
 	}
 	if (joyButton(state->joy.joy1_Buttons, 3)) {
-		state->hangSpeed = 100;
+		state->leftHangSpeed = 100;
+		state->rightHangSpeed = 100;
 	} else if (joyButton(state->joy.joy1_Buttons, 4)) {
-		state->hangSpeed = -100;
+		state->leftHangSpeed = -100;
+		state->rightHangSpeed = -100;
 	} else {
-		state->hangSpeed = 0;
+		state->leftHangSpeed = 0;
+		state->rightHangSpeed = 0;
 	}
 }
 
@@ -100,19 +102,26 @@ void updateRobot(joyState *state) {
 	motor[rightTread]=state->rightSpeed;
 	motor[leftTread]=state->leftSpeed;
 	motor[harvester]=state->harvesterSpeed;
-	motor[leftHang]=state->hangSpeed;
-	motor[rightHang]=state->hangSpeed;
+	motor[leftHang]=state->leftHangSpeed;
+	motor[rightHang]=state->rightHangSpeed;
 }
 
-void stopRobot(joyState *state) {
-	motor[rightTread]=0;
-	motor[leftTread]=0;
-	motor[harvester]=0;
-	motor[leftHang]=0;
-	motor[rightHang]=0;
-}
+void dataLogger(){
+
 
 void showDiagnostics(joyState *state) {
+	//create label
+	string batteryLevel = "power = ";
+
+	//store variable in a string
+	string string5 = externalBatteryAvg;
+
+	//concat variable with label
+	strcat(batteryLevel, string5);
+
 	eraseDisplay();
-	nxtDisplayTextLine(1, "TeleOp");
+
+	//display label and value
+	nxtDisplayTextLine(3, "Teleop");
+	nxtDisplayTextLine(5, batteryLevel);
 }
