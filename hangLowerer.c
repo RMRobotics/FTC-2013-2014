@@ -76,9 +76,10 @@ void updateInput(nxtState *state) {
 			state->rightHangSpeed = 100;
 		else
 			state->leftHangSpeed = 100;
-	}else
+	}else {
 		state->leftHangSpeed = 0;
 		state->rightHangSpeed = 0;
+	}
 }
 
 void updateRobot(nxtState *state) {
