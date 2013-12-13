@@ -2,10 +2,10 @@
 #pragma config(Sensor, S2,     sonar,          sensorI2CCustom)
 #pragma config(Sensor, S3,     HTIRS,         sensorI2CCustom)
 #pragma config(Sensor, S4,     HTGYRO,           sensorI2CCustom)
-#pragma config(Motor,  mtr_S1_C1_1,     leftTread,     tmotorTetrix, openLoop)
-#pragma config(Motor,  mtr_S1_C1_2,     rightTread,    tmotorTetrix, openLoop, reversed)
+#pragma config(Motor,  mtr_S1_C1_1,     leftTread,     tmotorTetrix, openLoop, reversed)
+#pragma config(Motor,  mtr_S1_C1_2,     rightTread,    tmotorTetrix, openLoop)
 #pragma config(Motor,  mtr_S1_C2_1,     harvester,        tmotorTetrix, openLoop)
-#pragma config(Motor,  mtr_S1_C2_2,     motorG,        tmotorTetrix, openLoop)
+#pragma config(Motor,  mtr_S1_C2_2,     flag,        tmotorTetrix, openLoop)
 #pragma config(Motor,  mtr_S1_C4_1,     leftHang,        tmotorTetrix, openLoop)
 #pragma config(Motor,  mtr_S1_C4_2,     rightHang,        tmotorTetrix, openLoop, reversed)
 #pragma config(Servo,  srvo_S1_C3_1,    servo1,               tServoNone)
@@ -36,8 +36,8 @@ typedef struct {
 	int harvesterSpeed;
 	int leftHangSpeed;
 	int rightHangSpeed;
+	int flagSpeed;
 	int stopper;
-	int auto;
 } joyState;
 
 int speedRef[129];
@@ -54,16 +54,14 @@ task main()
 	initialize(currentState);
 
 	for(int n = 0; n < 129; n++){
-		if(n<=16)
+		if(n<=10)
 			speedRef[n]=0;
-		else if(n<=32)
-			speedRef[n]=10;
-		else if(n<=64)
-			speedRef[n]= 50;
-		else if(n<=96)
+		else if(n<=50)
+			speedRef[n]= n * (100.0 / 128.0) + 0.5;
+		else if(n<=75)
+			speedRef[n]= n/7.5+50;
+		else if(n<=128)
 			speedRef[n] = n * (100.0 / 128.0) + 0.5;
-		else
-			speedRef[n]=100;
 	}
 
 	//waitForStart();
@@ -77,51 +75,57 @@ task main()
 
 void initialize(joyState *state) {
 	memset(state, 0, sizeof(state));
+	servo[auto] = 255;
 }
 
 void updateInput(joyState *state) {
 	getJoystickSettings(joystick);
 	memcpy(state->joy, joystick, sizeof(joystick));
 
-	state->leftSpeed = state->joy.joy1_y2/abs(state->joy.joy1_y2)*speedRef[abs(state->joy.joy1_y2)];
-	state->rightSpeed = state->joy.joy1_y1/abs(state->joy.joy1_y1)*speedRef[abs(state->joy.joy1_y1)];
-
-	if (joyButton(state->joy.joy1_Buttons, 1)) {
-		state->harvesterSpeed = 100;
-	} else if (joyButton(state->joy.joy1_Buttons, 2)) {
-		state->harvesterSpeed = 50;
+	if (joyButton(state->joy.joy1_Buttons, 3)){
+		state->leftSpeed = state->joy.joy2_y2/abs(state->joy.joy2_y2)*-speedRef[abs(state->joy.joy2_y2)];
+		state->rightSpeed = state->joy.joy2_y1/abs(state->joy.joy2_y1)*-speedRef[abs(state->joy.joy2_y1)];
 	} else {
+		state->leftSpeed = state->joy.joy1_y1/abs(state->joy.joy1_y1)*speedRef[abs(state->joy.joy1_y1)];
+		state->rightSpeed = state->joy.joy1_y2/abs(state->joy.joy1_y2)*speedRef[abs(state->joy.joy1_y2)];
+	}
+
+	if (joyButton(state->joy.joy1_Buttons, 5)) {
+		state->harvesterSpeed = 100;
+	} else if (joyButton(state->joy.joy1_Buttons, 7)) {
+		state->harvesterSpeed = 50;
+	} else if (joyButton(state->joy.joy1_Buttons, 6)) {
+		state->harvesterSpeed = -100;
+	}	else {
 		state->harvesterSpeed = 0;
 	}
 
-	if (joyButton(state->joy.joy1_Buttons, 7)) {
-		state->leftHangSpeed = 100;
-	} else if (joyButton(state->joy.joy1_Buttons, 5)) {
-		state->leftHangSpeed = -100;
+	if (joyButton(state->joy.joy1_Buttons, 8)){
+		state->flagSpeed = 100;
 	} else {
-		state->leftHangSpeed = 0;
+		state->flagSpeed = 0;
 	}
 
-	if (joyButton(state->joy.joy1_Buttons, 8)) {
+	if (joyButton(state->joy.joy2_Buttons, 7)) {
 		state->rightHangSpeed = 100;
-	} else if (joyButton(state->joy.joy1_Buttons, 6)) {
+	} else if (joyButton(state->joy.joy2_Buttons, 5)) {
 		state->rightHangSpeed = -100;
 	} else {
 		state->rightHangSpeed = 0;
 	}
 
-	if (joyButton(state->joy.joy1_Buttons, 4)) {
-		state->stopper = 255;
-	} else if (joyButton(state->joy.joy1_Buttons, 3)) {
-		state->stopper = 120;
+	if (joyButton(state->joy.joy2_Buttons, 8)) {
+		state->leftHangSpeed = 100;
+	} else if (joyButton(state->joy.joy2_Buttons, 6)) {
+		state->leftHangSpeed = -100;
+	} else {
+		state->leftHangSpeed = 0;
 	}
 
-	if (state->joy.joy1_TopHat == 0) {
-		state->auto = 240;
-	} else if (state->joy.joy1_TopHat == 4) {
-		state->auto = 0;
-	} else if (state->joy.joy1_TopHat == 2) {
-		state->auto = 120;
+	if (state->joy.joy1_TopHat == 2) {
+		state->stopper = 255;
+	} else if (state->joy.joy1_TopHat == 6) {
+		state->stopper = 120;
 	}
 
 }
@@ -138,8 +142,8 @@ void updateRobot(joyState *state) {
 	motor[harvester]=state->harvesterSpeed;
 	motor[leftHang]=state->leftHangSpeed;
 	motor[rightHang]=state->rightHangSpeed;
+	motor[flag]=state->flagSpeed;
 	servo[servo6]=state->stopper;
-	servo[servo5]=state->auto;
 }
 
 void stopRobot(joyState *state) {
@@ -148,7 +152,7 @@ void stopRobot(joyState *state) {
 	motor[harvester]=0;
 	motor[leftHang]=0;
 	motor[rightHang]=0;
-	servo[auto]=0;
+	motor[flag]=0;
 	servo[stopper]=0;
 }
 
