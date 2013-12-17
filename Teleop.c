@@ -38,6 +38,7 @@ typedef struct {
 	int rightHangSpeed;
 	int flagSpeed;
 	int stopper;
+	int autoPos;
 } joyState;
 
 int speedRef[129];
@@ -64,7 +65,7 @@ task main()
 			speedRef[n] = n * (100.0 / 128.0) + 0.5;
 	}
 
-	//waitForStart();
+	waitForStart();
 
 	while(true){
 		updateInput(currentState);
@@ -125,7 +126,13 @@ void updateInput(joyState *state) {
 	if (state->joy.joy1_TopHat == 2) {
 		state->stopper = 255;
 	} else if (state->joy.joy1_TopHat == 6) {
-		state->stopper = 120;
+		state->stopper = 0;
+	}
+
+	if (joyButton(state->joy.joy2_Buttons, 3)) {
+		state->autoPos = 100;
+	} else if (joyButton(state->joy.joy2_Buttons, 4)) {
+		state->autoPos = 240;
 	}
 
 }
@@ -144,6 +151,7 @@ void updateRobot(joyState *state) {
 	motor[rightHang]=state->rightHangSpeed;
 	motor[flag]=state->flagSpeed;
 	servo[servo6]=state->stopper;
+	servo[servo5]=state->autoPos;
 }
 
 void stopRobot(joyState *state) {
