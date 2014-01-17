@@ -1,9 +1,9 @@
 #pragma config(Hubs,  S1, HTMotor,  HTMotor,  HTMotor,  HTMotor)
 #pragma config(Hubs,  S2, HTServo,  none,     none,     none)
-#pragma config(Sensor, S3,     HTGYRO,          sensorI2CCustom)
+#pragma config(Sensor, S3,     HTSPB,          sensorI2CCustom)
 #pragma config(Sensor, S4,     HTSMUX,         sensorI2CCustom)
 #pragma config(Motor,  mtr_S1_C1_1,     leftTread,            tmotorTetrix, openLoop, reversed)
-#pragma config(Motor,  mtr_S1_C1_2,     leftTread,            tmotorTetrix, openLoop)
+#pragma config(Motor,  mtr_S1_C1_2,     leftTread,            tmotorTetrix, openLoop, reversed)
 #pragma config(Motor,  mtr_S1_C2_1,     rightTread,           tmotorTetrix, openLoop)
 #pragma config(Motor,  mtr_S1_C2_2,     rightTread,           tmotorTetrix, openLoop)
 #pragma config(Motor,  mtr_S1_C3_1,     flag,            tmotorTetrix, openLoop)
@@ -23,10 +23,12 @@
 #include "drivers/hitechnic-irseeker-v1.h"
 #include "drivers/hitechnic-gyro.h"
 #include "drivers/hitechnic-accelerometer.h"
+#include "drivers/hitechnic-superpro.h"
 
 const tMUXSensor HTIRS = msensor_S4_1;
 const tMUXSensor sonar = msensor_S4_2;
 const tMUXSensor color = msensor_S4_3;
+const tMUXSensor HTGYRO = msensor_S4_4;
 
 typedef struct {
 	TJoystick joy;
