@@ -2,10 +2,10 @@
 #pragma config(Hubs,  S2, HTServo,  none,     none,     none)
 #pragma config(Sensor, S3,     HTSPB,          sensorI2CCustom)
 #pragma config(Sensor, S4,     HTSMUX,         sensorI2CCustom)
-#pragma config(Motor,  mtr_S1_C1_1,     rightTread,            tmotorTetrix, openLoop, reversed)
-#pragma config(Motor,  mtr_S1_C1_2,     rightTread,            tmotorTetrix, openLoop, reversed)
-#pragma config(Motor,  mtr_S1_C2_1,     leftTread,           tmotorTetrix, openLoop)
-#pragma config(Motor,  mtr_S1_C2_2,     leftTread,           tmotorTetrix, openLoop)
+#pragma config(Motor,  mtr_S1_C1_1,     leftTread,            tmotorTetrix, openLoop, reversed)
+#pragma config(Motor,  mtr_S1_C1_2,     leftTread2,            tmotorTetrix, openLoop, reversed)
+#pragma config(Motor,  mtr_S1_C2_1,     rightTread,           tmotorTetrix, openLoop)
+#pragma config(Motor,  mtr_S1_C2_2,     rightTread2,           tmotorTetrix, openLoop)
 #pragma config(Motor,  mtr_S1_C3_1,     flag,            tmotorTetrix, openLoop)
 #pragma config(Motor,  mtr_S1_C3_2,     harvester,                 tmotorTetrix, openLoop)
 #pragma config(Motor,  mtr_S1_C4_1,     rightHang,             tmotorTetrix, openLoop, reversed)
@@ -20,6 +20,7 @@
 
 #include "JoystickDriver.c"  //Include file to "handle" the Bluetooth messages.
 #include "drivers/hitechnic-sensormux.h"
+#include "drivers/lego-ultrasound.h"
 #include "drivers/hitechnic-irseeker-v1.h"
 #include "drivers/hitechnic-gyro.h"
 #include "drivers/hitechnic-accelerometer.h"
@@ -160,29 +161,31 @@ void initialize(teleopState *state) {
 }
 
 void updateInput(teleopState *state) {
+	hogCPU();
 	getJoystickSettings(state->joy);
+	releaseCPU();
 
 	if (joyButton(state->joy.joy1_Buttons, 3)){
-		if(state->joy.joy2_y2 >= 0){
-			state->leftSpeed = joyPosToSpeedTable[state->joy.joy2_y2];
-		}else{
-			state->leftSpeed = -joyPosToSpeedTable[-state->joy.joy2_y2];
-		}
 		if(state->joy.joy2_y1 >= 0){
-			state->rightSpeed = joyPosToSpeedTable[state->joy.joy2_y1];
+			state->leftSpeed = joyPosToSpeedTable[state->joy.joy2_y1];
 		}else{
-			state->rightSpeed = -joyPosToSpeedTable[-state->joy.joy2_y1];
+			state->leftSpeed = -joyPosToSpeedTable[-state->joy.joy2_y1];
+		}
+		if(state->joy.joy2_y2 >= 0){
+			state->rightSpeed = joyPosToSpeedTable[state->joy.joy2_y2];
+		}else{
+			state->rightSpeed = -joyPosToSpeedTable[-state->joy.joy2_y2];
 		}
 	}else{
-		if(state->joy.joy1_y2 >= 0){
-			state->leftSpeed = joyPosToSpeedTable[state->joy.joy1_y2];
-		}else{
-			state->leftSpeed = -joyPosToSpeedTable[-state->joy.joy1_y2];
-		}
 		if(state->joy.joy1_y1 >= 0){
-			state->rightSpeed = joyPosToSpeedTable[state->joy.joy1_y1];
+			state->leftSpeed = joyPosToSpeedTable[state->joy.joy1_y1];
 		}else{
-			state->rightSpeed = -joyPosToSpeedTable[-state->joy.joy1_y1];
+			state->leftSpeed = -joyPosToSpeedTable[-state->joy.joy1_y1];
+		}
+		if(state->joy.joy1_y2 >= 0){
+			state->rightSpeed = joyPosToSpeedTable[state->joy.joy1_y2];
+		}else{
+			state->rightSpeed = -joyPosToSpeedTable[-state->joy.joy1_y2];
 		}
 	}
 
@@ -248,6 +251,8 @@ int joyButton(short bitmask, int button)
 void updateRobot(teleopState *state) {
 	motor[leftTread]=state->leftSpeed;
 	motor[rightTread]=state->rightSpeed;
+	motor[leftTread2]=state->leftSpeed;
+	motor[rightTread2]=state->rightSpeed;
 	motor[harvester]=state->harvesterSpeed;
 	motor[leftHang]=state->leftHangSpeed;
 	motor[rightHang]=state->rightHangSpeed;
@@ -260,6 +265,8 @@ void updateRobot(teleopState *state) {
 void stopRobot() {
 	motor[leftTread]=0;
 	motor[rightTread]=0;
+	motor[leftTread2]=0;
+	motor[rightTread2]=0;
 	motor[harvester]=0;
 	motor[leftHang]=0;
 	motor[rightHang]=0;
