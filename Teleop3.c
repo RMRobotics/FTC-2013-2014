@@ -12,7 +12,7 @@
 #pragma config(Motor,  mtr_S1_C4_2,     leftHang,            tmotorTetrix, openLoop)
 #pragma config(Servo,  srvo_S2_C1_1,    servo1,               tServoNone)
 #pragma config(Servo,  srvo_S2_C1_2,    servo2,               tServoNone)
-#pragma config(Servo,  srvo_S2_C1_3,    servo3,               tServoNone)
+#pragma config(Servo,  srvo_S2_C1_3,    flagServo,               tServoNone)
 #pragma config(Servo,  srvo_S2_C1_4,    wrist,               tServoNone)
 #pragma config(Servo,  srvo_S2_C1_5,    elbow,               tServoNone)
 #pragma config(Servo,  srvo_S2_C1_6,    stopper,               tServoNone)
@@ -26,17 +26,20 @@
 #include "drivers/hitechnic-accelerometer.h"
 #include "drivers/hitechnic-superpro.h"
 
-#define STOPPERIN 255
-#define STOPPEROUT 0
-#define WRISTIN 255
-#define WRISTOUT 50
-#define ELBOWIN 0
-#define ELBOWOUT 110
-
 const tMUXSensor HTIRS = msensor_S4_1;
 const tMUXSensor sonar = msensor_S4_2;
 const tMUXSensor color = msensor_S4_3;
 const tMUXSensor HTGYRO = msensor_S4_4;
+
+#define FLAGSERVOOUT 255
+#define FLAGSERVOIN 0
+#define FLAGSERVOSPEED 0.3
+#define STOPPERIN 255
+#define STOPPEROUT 0
+#define WRISTIN 240
+#define WRISTOUT 50
+#define ELBOWIN 0
+#define ELBOWOUT 115
 
 typedef struct {
 	TJoystick joy;
@@ -47,6 +50,7 @@ typedef struct {
 	int leftHangSpeed;
 	int rightHangSpeed;
 	int flagSpeed;
+	float flagServoPos;
 	int stopperPos;
 	int wristPos;
 	int elbowPos;
@@ -91,8 +95,8 @@ int joyButton(short bitmask, int button);
 //   Controller 1
 //     Left Joystick:................Left tread speed (analog control)
 //     Right Joystick:...............Right tread speed (analog control)
-//     X/1:..........................
-//     A/2:..........................
+//     X/1:..........................Flag servo in
+//     A/2:..........................Flag servo out
 //     B/3:..........................Give joystick 2 drive control
 //     Y/4:..........................
 //     Left Bumper/5:................Harvester fast
@@ -221,6 +225,13 @@ void updateInput(teleopState *state) {
 		state->leftHangSpeed = 0;
 	}
 
+	//flag servo
+	if (joyButton(state->joy.joy1_Buttons, 4) && state->flagServoPos < FLAGSERVOOUT) {
+		state->flagServoPos += FLAGSERVOSPEED;
+	} else if (joyButton(state->joy.joy1_Buttons, 1 && state->flagServoPos > FLAGSERVOIN)) {
+		state->flagServoPos -= FLAGSERVOSPEED;
+	}
+
 	if (state->joy.joy1_TopHat == 2) {
 		state->stopperPos = STOPPERIN;
 	} else if (state->joy.joy1_TopHat == 6) {
@@ -257,6 +268,7 @@ void updateRobot(teleopState *state) {
 	motor[leftHang]=state->leftHangSpeed;
 	motor[rightHang]=state->rightHangSpeed;
 	motor[flag]=state->flagSpeed;
+	servo[flagServo] = state->flagServoPos;
 	servo[wrist]=state->wristPos;
 	servo[elbow]=state->elbowPos;
 	servo[stopper]=state->stopperPos;
@@ -271,6 +283,10 @@ void stopRobot() {
 	motor[leftHang]=0;
 	motor[rightHang]=0;
 	motor[flag]=0;
+	servo[flagServo] =0;
+	servo[wrist]=0;
+	servo[elbow]=0;
+	servo[stopper]=0;
 }
 
 void showDiagnostics(teleopState *state) {

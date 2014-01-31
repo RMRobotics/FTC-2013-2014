@@ -1,18 +1,18 @@
 #pragma config(Hubs,  S1, HTMotor,  HTMotor,  HTMotor,  HTMotor)
 #pragma config(Hubs,  S2, HTServo,  none,     none,     none)
 #pragma config(Sensor, S3,     HTSPB,          sensorI2CCustom)
-#pragma config(Sensor, S4,     SMUX,         sensorI2CCustom)
+#pragma config(Sensor, S4,     HTSMUX,         sensorI2CCustom)
 #pragma config(Motor,  mtr_S1_C1_1,     leftTread,            tmotorTetrix, openLoop, reversed)
 #pragma config(Motor,  mtr_S1_C1_2,     leftTread2,            tmotorTetrix, openLoop, reversed)
 #pragma config(Motor,  mtr_S1_C2_1,     rightTread,           tmotorTetrix, openLoop)
 #pragma config(Motor,  mtr_S1_C2_2,     rightTread2,           tmotorTetrix, openLoop)
 #pragma config(Motor,  mtr_S1_C3_1,     flag,            tmotorTetrix, openLoop)
 #pragma config(Motor,  mtr_S1_C3_2,     harvester,                 tmotorTetrix, openLoop)
-#pragma config(Motor,  mtr_S1_C4_1,     leftHang,             tmotorTetrix, openLoop, reversed)
-#pragma config(Motor,  mtr_S1_C4_2,     rightHang,            tmotorTetrix, openLoop)
+#pragma config(Motor,  mtr_S1_C4_1,     rightHang,             tmotorTetrix, openLoop, reversed)
+#pragma config(Motor,  mtr_S1_C4_2,     leftHang,            tmotorTetrix, openLoop)
 #pragma config(Servo,  srvo_S2_C1_1,    servo1,               tServoNone)
 #pragma config(Servo,  srvo_S2_C1_2,    servo2,               tServoNone)
-#pragma config(Servo,  srvo_S2_C1_3,    servo3,               tServoNone)
+#pragma config(Servo,  srvo_S2_C1_3,    flagServo,               tServoNone)
 #pragma config(Servo,  srvo_S2_C1_4,    wrist,               tServoNone)
 #pragma config(Servo,  srvo_S2_C1_5,    elbow,               tServoNone)
 #pragma config(Servo,  srvo_S2_C1_6,    stopper,               tServoNone)
@@ -27,7 +27,7 @@
 #include "drivers/hitechnic-superpro.h"
 
 const tMUXSensor HTIRS = msensor_S4_1;
-const tMUXSensor distanceSensor = msensor_S4_2;
+const tMUXSensor sonar = msensor_S4_2;
 const tMUXSensor color = msensor_S4_3;
 const tMUXSensor HTGYRO = msensor_S4_4;
 
@@ -52,10 +52,14 @@ const tMUXSensor HTGYRO = msensor_S4_4;
 #define INNERSONARBOUND 30
 #define OUTERSONARBOUND 34
 
-#define WRISTIN 255
+#define FLAGSERVOOUT 255
+#define FLAGSERVOIN 0
+#define STOPPERIN 255
+#define STOPPEROUT 0
+#define WRISTIN 240
 #define WRISTOUT 50
 #define ELBOWIN 0
-#define ELBOWOUT 110
+#define ELBOWOUT 115
 
 #ifdef AUDIO_DEBUG_ENABLED
 #define AUDIO_DEBUG(frequency, duration) PlayTone(frequency, duration)
@@ -81,21 +85,21 @@ typedef struct{
 	//float Z_distance;
 
 	int lastSensorCheckTime;
-} State;
+} RobotState;
 
-void initialize(State *state);
-void getSensors(State *state);
-void resetGyroAccel(State * state);
+void initialize(RobotState *state);
+void getSensors(RobotState *state);
+void resetGyroAccel(RobotState * state);
 void drive(int leftSpeed, int rightSpeed);
 void stopMotors();
-void showDiagnostics(State *state);
+void showDiagnostics(RobotState *state);
 
-void initialize(State *state){
+void initialize(RobotState *state){
 	memset(state, 0, sizeof(state));
 	motor[leftTread] = 0;
 	motor[rightTread] = 0;
-	servo[wrist] = WRISTIN;
-	servo[elbow] = ELBOWIN;
+	servo[wrist] = 255;
+	servo[elbow] = 15;
 
 	// Calibrate the gyro, make sure you hold the sensor still
 	HTGYROstartCal(HTGYRO);
@@ -110,12 +114,15 @@ void initialize(State *state){
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 task main() {
-	State state;
+	RobotState state;
 	initialize(&state);
 	int leftSpeed = 0;
 	int rightSpeed = 0;
+	int numTimeGreater50 = 0;
+	int numTimeLess50 = 0;
+	bool special;
 
-	//waitForStart();
+	waitForStart();
 	//state.lastSensorCheckTime = time1[T2];
 
 	AUDIO_DEBUG(500, 10);
@@ -125,14 +132,13 @@ task main() {
 		drive(DRIVESPEED, DRIVESPEED);
 		if(TIMEOUT(3000)){
 			state.currentState = FAIL;
-		}else if(state.irDir == 5){
+			}else if(state.irDir == 5){
 			state.currentState = SCOREBLOCK;
-		}else if(state.dist <= 50){
+			}else if(state.dist <= 50){
 			state.currentState = LINEFOLLOWER1;
 		}
 	}
 
-	bool special;
 	AUDIO_DEBUG(500, 10);
 	time1[T1] = 0;
 	while(state.currentState == LINEFOLLOWER1){
@@ -142,15 +148,15 @@ task main() {
 			state.currentState = SCOREBLOCK;
 			if (time1[T1] >= 3000)
 				special = true;
-		}else if(state.dist < INNERSONARBOUND){
+			}else if(state.dist < INNERSONARBOUND){
 			leftSpeed  = DRIVESPEED*LINEFOLLOWRATIO;
 			rightSpeed = DRIVESPEED;
-		}else if(state.dist > OUTERSONARBOUND){
+			}else if(state.dist > OUTERSONARBOUND){
 			leftSpeed = DRIVESPEED;
 			rightSpeed = DRIVESPEED*LINEFOLLOWRATIO;
-		}else if(TIMEOUT(5000)){
+			}else if(TIMEOUT(5000)){
 			state.currentState = LINEFOLLOWER2;
-		}else { //in range
+			}else { //in range
 			leftSpeed = DRIVESPEED;
 			rightSpeed = DRIVESPEED;
 		}
@@ -175,32 +181,30 @@ task main() {
 
 	AUDIO_DEBUG(500,10);
 	time1[T1] = 0;
-	int numTimeGreater50 = 0;
-	int numTimeLess50 = 0;
 	while(state.currentState == LINEFOLLOWER2){
 		getSensors(&state);
 		drive(leftSpeed, rightSpeed);
 		/*if(state.irDir == 5){
-			state.currentState = FAIL;
-		}else*/ if(state.dist >= 50){
+		state.currentState = FAIL;
+			}else*/ if(state.dist >= 50){
 			numTimeGreater50++;
 			numTimeLess50 = 0;
 			if(numTimeGreater50 > 10 && numTimeLess50 > 10){
 				state.currentState = GOTOEND;
 			}
-		} else if(state.dist > OUTERSONARBOUND){
+			} else if(state.dist > OUTERSONARBOUND){
 			leftSpeed  = DRIVESPEED;
 			rightSpeed = DRIVESPEED*LINEFOLLOWRATIO;
 			numTimeGreater50 = 0;
 			numTimeLess50++;
-		}else if(state.dist < INNERSONARBOUND){
+			}else if(state.dist < INNERSONARBOUND){
 			leftSpeed = DRIVESPEED*LINEFOLLOWRATIO;
 			rightSpeed = DRIVESPEED;
 			numTimeGreater50 = 0;
 			numTimeLess50++;
-		}else if(TIMEOUT(1500)){
+			}else if(TIMEOUT(1500)){
 			state.currentState = GOTOEND;
-		}else { //in range
+			}else { //in range
 			leftSpeed = DRIVESPEED;
 			rightSpeed = DRIVESPEED;
 			numTimeGreater50 = 0;
@@ -279,7 +283,7 @@ task main() {
 	}
 }
 
-void getSensors(State *state){
+void getSensors(RobotState *state){
 
 	//************************IR Sensor**************************
 
@@ -303,22 +307,13 @@ void getSensors(State *state){
 		StopAllTasks();
 	}
 
-	// display the info from the sensor
-	/*nxtDisplayTextLine(0,"HT IR Seeker");
-	nxtDisplayTextLine(2, "dir: %2d", _dir);
-	nxtDisplayTextLine(3, "S1: %3d", dcS1);
-	nxtDisplayTextLine(4, "S2: %3d", dcS2);
-	nxtDisplayTextLine(5, "S3: %3d", dcS3);
-	nxtDisplayTextLine(6, "S4: %3d", dcS4);
-	nxtDisplayTextLine(7, "S5: %3d", dcS5);*/
-
 	state->irDir = _dir;
 
 	//*********************************************************
 
 	//***********************Sonar*****************************
 
-	state->dist = USreadDist(distanceSensor);
+	state->dist = USreadDist(sonar);
 
 	//*********************************************************
 
@@ -332,16 +327,16 @@ void getSensors(State *state){
 	/*state->lastSensorCheckTime += 20;
 	int waitTime = state->lastSensorCheckTime-time1[T2];
 	if (waitTime >= 0 && waitTime <= 20) {
-		wait1Msec(waitTime);
+	wait1Msec(waitTime);
 	} else {
-		AUDIO_DEBUG(700, 1000);
-		eraseDisplay();
-		string errorDisplay;
-		sprintf(errorDisplay, "missed %d",(int)(time1[T2] - state->lastSensorCheckTime));
-		nxtDisplayTextLine(3, errorDisplay);
-		stopMotors();
-		wait1Msec(100000000000);
-		state->lastSensorCheckTime = time1[T2];
+	AUDIO_DEBUG(700, 1000);
+	eraseDisplay();
+	string errorDisplay;
+	sprintf(errorDisplay, "missed %d",(int)(time1[T2] - state->lastSensorCheckTime));
+	nxtDisplayTextLine(3, errorDisplay);
+	stopMotors();
+	wait1Msec(100000000000);
+	state->lastSensorCheckTime = time1[T2];
 	}*/
 
 
@@ -364,7 +359,7 @@ void getSensors(State *state){
 	//*********************************************************
 }
 
-void resetGyroAccel(State *state){
+void resetGyroAccel(RobotState *state){
 	state->degrees = 0;
 	//state->x_distance = 0;
 	//state->y_distance = 0;
@@ -385,7 +380,7 @@ void stopMotors(){
 	motor[rightTread2] = 0;
 }
 
-void showDiagnostics(State *state){
+void showDiagnostics(RobotState *state){
 	//create label
 	string displayState = "state = ";
 	string sonarSensor = "sonar = ";
@@ -396,8 +391,8 @@ void showDiagnostics(State *state){
 
 	//store variable in a string
 	string string0 = state->currentState;
-	string string1 = state->dist; //ServoValue[vert1];
-	string string2 = state->irDir; //ServoValue[vert2];
+	string string1 = state->dist;
+	string string2 = state->irDir;
 	string string3 = state->degrees;
 	string string4 = time1[T1];
 	string string5 = externalBatteryAvg;
