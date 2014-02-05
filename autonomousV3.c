@@ -48,15 +48,18 @@ const tMUXSensor HTGYRO = msensor_S4_4;
 
 #define TURNSPEED 75
 #define DRIVESPEED 50
-#define LINEFOLLOWRATIO 0.5
+#define COMP .99
+
+#define INLINEFOLLOWRATIO 0.5
+#define OUTLINEFOLLOWRATIO 0.75
 #define INNERSONARBOUND 30
-#define OUTERSONARBOUND 34
+#define OUTERSONARBOUND 32
 
 #define FLAGSERVOOUT 255
 #define FLAGSERVOIN 0
 #define STOPPERIN 255
 #define STOPPEROUT 0
-#define WRISTIN 240
+#define WRISTIN 255
 #define WRISTOUT 50
 #define ELBOWIN 0
 #define ELBOWOUT 115
@@ -98,8 +101,8 @@ void initialize(RobotState *state){
 	memset(state, 0, sizeof(state));
 	motor[leftTread] = 0;
 	motor[rightTread] = 0;
-	servo[wrist] = 255;
-	servo[elbow] = 15;
+	servo[wrist] = WRISTIN;
+	servo[elbow] = ELBOWIN;
 
 	// Calibrate the gyro, make sure you hold the sensor still
 	HTGYROstartCal(HTGYRO);
@@ -119,10 +122,9 @@ task main() {
 	int leftSpeed = 0;
 	int rightSpeed = 0;
 	int numTimeGreater50 = 0;
-	int numTimeLess50 = 0;
 	bool special;
 
-	waitForStart();
+	//waitForStart();
 	//state.lastSensorCheckTime = time1[T2];
 
 	AUDIO_DEBUG(500, 10);
@@ -144,23 +146,32 @@ task main() {
 	while(state.currentState == LINEFOLLOWER1){
 		getSensors(&state);
 		drive(leftSpeed, rightSpeed);
+		if(time1[T1] > 2000){
+			if(state.dist > 50){
+				numTimeGreater50++;
+				if(numTimeGreater50 > 10) {
+					state.currentState = GOTOEND;
+				}
+			} else {
+				numTimeGreater50 = 0;
+			}
+		}
 		if(state.irDir == 5){
 			state.currentState = SCOREBLOCK;
 			if (time1[T1] >= 3000)
 				special = true;
 			}else if(state.dist < INNERSONARBOUND){
-			leftSpeed  = DRIVESPEED*LINEFOLLOWRATIO;
+			leftSpeed  = DRIVESPEED*INLINEFOLLOWRATIO;
 			rightSpeed = DRIVESPEED;
 			}else if(state.dist > OUTERSONARBOUND){
 			leftSpeed = DRIVESPEED;
-			rightSpeed = DRIVESPEED*LINEFOLLOWRATIO;
-			}else if(TIMEOUT(5000)){
-			state.currentState = LINEFOLLOWER2;
+			rightSpeed = DRIVESPEED*OUTLINEFOLLOWRATIO;
 			}else { //in range
 			leftSpeed = DRIVESPEED;
 			rightSpeed = DRIVESPEED;
 		}
 	}
+	numTimeGreater50 = 0;
 
 	AUDIO_DEBUG(500,10);
 	time1[T1] = 0;
@@ -184,42 +195,36 @@ task main() {
 	while(state.currentState == LINEFOLLOWER2){
 		getSensors(&state);
 		drive(leftSpeed, rightSpeed);
-		/*if(state.irDir == 5){
-		state.currentState = FAIL;
-			}else*/ if(state.dist >= 50){
+		if(state.dist >= 50){
 			numTimeGreater50++;
-			numTimeLess50 = 0;
-			if(numTimeGreater50 > 10 && numTimeLess50 > 10){
+			if(numTimeGreater50 > 10){
 				state.currentState = GOTOEND;
 			}
 			} else if(state.dist > OUTERSONARBOUND){
 			leftSpeed  = DRIVESPEED;
-			rightSpeed = DRIVESPEED*LINEFOLLOWRATIO;
+			rightSpeed = DRIVESPEED*OUTLINEFOLLOWRATIO;
 			numTimeGreater50 = 0;
-			numTimeLess50++;
 			}else if(state.dist < INNERSONARBOUND){
-			leftSpeed = DRIVESPEED*LINEFOLLOWRATIO;
+			leftSpeed = DRIVESPEED*INLINEFOLLOWRATIO;
 			rightSpeed = DRIVESPEED;
 			numTimeGreater50 = 0;
-			numTimeLess50++;
 			}else if(TIMEOUT(1500)){
 			state.currentState = GOTOEND;
 			}else { //in range
 			leftSpeed = DRIVESPEED;
 			rightSpeed = DRIVESPEED;
 			numTimeGreater50 = 0;
-			numTimeLess50++;
 		}
 	}
 
 	AUDIO_DEBUG(500,10);
 	time1[T1] = 0;
 	while(state.currentState == GOTOEND){
-		//getSensors(&state);
-		//state.leftSpeed = DRIVESPEED;
-		//state.rightSpeed = DRIVESPEED;
-		//drive(&state);
-		if(time1[T1] >= 0){
+		getSensors(&state);
+		leftSpeed = -DRIVESPEED;
+		rightSpeed = -DRIVESPEED;
+		drive(leftSpeed, rightSpeed);
+		if(time1[T1] >= 500){
 			state.currentState = PARKSEQUENCE1;
 		}
 	}
@@ -243,8 +248,8 @@ task main() {
 	time1[T1] = 0;
 	while(state.currentState == PARKSEQUENCE2){
 		getSensors(&state);
-		drive(-DRIVESPEED, -DRIVESPEED);
-		if(time1[T1] >= 3000){
+		drive(DRIVESPEED, DRIVESPEED);
+		if(time1[T1] > 4000){
 			state.currentState = PARKSEQUENCE3;
 		}
 	}
@@ -254,8 +259,8 @@ task main() {
 	resetGyroAccel(&state);
 	while(state.currentState == PARKSEQUENCE3){
 		getSensors(&state);
-		drive(-DRIVESPEED, DRIVESPEED);
-		if(abs(state.degrees) >= 68 || TIMEOUT(500)){
+		drive(-TURNSPEED, TURNSPEED);
+		if(abs(state.degrees) >= 34 || TIMEOUT(500)){
 			stopMotors();
 			state.currentState = PARKSEQUENCE4;
 		}
@@ -266,7 +271,7 @@ task main() {
 	while(state.currentState == PARKSEQUENCE4){
 		getSensors(&state);
 		drive(-DRIVESPEED, -DRIVESPEED);
-		if(time1[T1] >= 3000){
+		if(time1[T1] >= 3500){
 			stopMotors();
 			state.currentState = END;
 		}
@@ -367,9 +372,9 @@ void resetGyroAccel(RobotState *state){
 }
 
 void drive(int leftSpeed, int rightSpeed){
-	motor[leftTread] = leftSpeed;
+	motor[leftTread] = COMP*leftSpeed;
 	motor[rightTread] = rightSpeed;
-	motor[leftTread2] = leftSpeed;
+	motor[leftTread2] = COMP*leftSpeed;
 	motor[rightTread2] = rightSpeed;
 }
 

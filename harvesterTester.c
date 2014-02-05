@@ -56,6 +56,7 @@ task main()
 
 void initialize(nxtState *state) {
 	memset(state, 0, sizeof(state));
+	updateRobot(state);
 }
 
 void updateInput(nxtState *state) {
@@ -67,6 +68,8 @@ void updateInput(nxtState *state) {
 		state->harvesterSpeed = 0;
 		state->harvesterSpeed = 0;
 	}
+	state->leftHangSpeed = 0;
+	state->rightHangSpeed = 0;
 }
 
 void updateRobot(nxtState *state) {

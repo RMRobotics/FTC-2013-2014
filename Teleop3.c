@@ -33,10 +33,10 @@ const tMUXSensor HTGYRO = msensor_S4_4;
 
 #define FLAGSERVOOUT 255
 #define FLAGSERVOIN 0
-#define FLAGSERVOSPEED 0.3
+#define FLAGSERVOSPEED 0.5
 #define STOPPERIN 255
 #define STOPPEROUT 0
-#define WRISTIN 240
+#define WRISTIN 255
 #define WRISTOUT 50
 #define ELBOWIN 0
 #define ELBOWOUT 115
@@ -64,6 +64,15 @@ void updateRobot(teleopState *state);
 void stopRobot();
 void showDiagnostics(teleopState *state);
 int joyButton(short bitmask, int button);
+
+void initialize(teleopState *state) {
+	memset(state, 0, sizeof(state));
+	state->wristPos = WRISTIN;
+	state->elbowPos = ELBOWIN;
+	state->stopperPos = STOPPEROUT;
+	updateRobot(state);
+	stopRobot();
+}
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -153,15 +162,6 @@ task main()
 		updateRobot(currentState);
 		showDiagnostics(currentState);
 	}
-}
-
-void initialize(teleopState *state) {
-	memset(state, 0, sizeof(state));
-	state->wristPos = WRISTIN;
-	state->elbowPos = ELBOWIN;
-	state->stopperPos = STOPPEROUT;
-	updateRobot(state);
-	stopRobot();
 }
 
 void updateInput(teleopState *state) {
@@ -283,10 +283,6 @@ void stopRobot() {
 	motor[leftHang]=0;
 	motor[rightHang]=0;
 	motor[flag]=0;
-	servo[flagServo] =0;
-	servo[wrist]=0;
-	servo[elbow]=0;
-	servo[stopper]=0;
 }
 
 void showDiagnostics(teleopState *state) {
