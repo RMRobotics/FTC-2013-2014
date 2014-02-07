@@ -41,8 +41,16 @@ const tMUXSensor HTGYRO = msensor_S4_4;
 #define ELBOWIN 0
 #define ELBOWOUT 115
 
+//LEDBitmask addres definitions
+#define B2 0x04 //IR detected output address
+#define B3 0x08 //block detected output address
+#define B4 0x0F //robot lifting output address
+#define B5 0x20 //stopper in output address
+
 typedef struct {
 	TJoystick joy;
+
+	ubyte LEDBitmask;
 
 	int leftSpeed;
 	int rightSpeed;
@@ -59,13 +67,16 @@ typedef struct {
 int joyPosToSpeedTable[129];
 
 void initialize(teleopState *state);
-void updateInput(teleopState *state);
+void updateJoystickInput(teleopState *state);
+void updateSensorInput(teleopState *state);
 void updateRobot(teleopState *state);
 void stopRobot();
 void showDiagnostics(teleopState *state);
 int joyButton(short bitmask, int button);
+void LEDController(ubyte LEDBitmask);
 
 void initialize(teleopState *state) {
+	HTSPBsetupIO(HTSPB, 0xFF);
 	memset(state, 0, sizeof(state));
 	state->wristPos = WRISTIN;
 	state->elbowPos = ELBOWIN;
@@ -124,10 +135,10 @@ void initialize(teleopState *state) {
 //     A/2:..........................Wrist sero out
 //     B/3:..........................Elbow servo in
 //     Y/4:..........................Elvow servo out
-//     Left Bumper/5:................Left Hanger Down
-//     Left Trigger/7:..,............Left Hanger Up
-//     Right Bumper/6:...............Right Hanger Down
-//     Right Trigger/8:..............Right Hanger Up
+//     Left Bumper/5:................Left Hanger Up
+//     Left Trigger/7:..,............Left Hanger Down
+//     Right Bumper/6:...............Right Hanger Up
+//     Right Trigger/8:..............Right Hanger Down
 //     Tophat/D-pad
 //       Up/0:.......................
 //       Down/4:.....................
@@ -158,13 +169,15 @@ task main()
 	waitForStart();
 
 	while(true){
-		updateInput(currentState);
+		currentState.LEDBitmask = 0x00; //clear LEDBitmask
+		updateJoystickInput(currentState);
+		updateSensorInput(currentState);
 		updateRobot(currentState);
 		showDiagnostics(currentState);
 	}
 }
 
-void updateInput(teleopState *state) {
+void updateJoystickInput(teleopState *state) {
 	hogCPU();
 	getJoystickSettings(state->joy);
 	releaseCPU();
@@ -211,6 +224,7 @@ void updateInput(teleopState *state) {
 
 	if (joyButton(state->joy.joy2_Buttons, 7)) {
 		state->rightHangSpeed = 100;
+		state->LEDBitmask = state->LEDBitmask | B4;
 	} else if (joyButton(state->joy.joy2_Buttons, 5)) {
 		state->rightHangSpeed = -100;
 	} else {
@@ -219,6 +233,7 @@ void updateInput(teleopState *state) {
 
 	if (joyButton(state->joy.joy2_Buttons, 8)) {
 		state->leftHangSpeed = 100;
+		state->LEDBitmask = state->LEDBitmask | B4;
 	} else if (joyButton(state->joy.joy2_Buttons, 6)) {
 		state->leftHangSpeed = -100;
 	} else {
@@ -232,8 +247,10 @@ void updateInput(teleopState *state) {
 		state->flagServoPos -= FLAGSERVOSPEED;
 	}
 
+	//stopper servo
 	if (state->joy.joy1_TopHat == 2) {
 		state->stopperPos = STOPPERIN;
+		state->LEDBitmask = state->LEDBitmask | B5;
 	} else if (state->joy.joy1_TopHat == 6) {
 		state->stopperPos = STOPPEROUT;
 	}
@@ -253,10 +270,24 @@ void updateInput(teleopState *state) {
 	}
 }
 
+void updateSensorInput(teleopState *state) {
+	if (SensorValue[color] == YELLOWCOLOR){
+		state->LEDBitmask = state->LEDBitmask | B3;
+	}
+}
+
 int joyButton(short bitmask, int button)
 {
 	//return 1 or 0 based on whether button in bitmask is pressed or not
 	return bitmask & (1 << (button - 1));
+}
+
+void LEDController(ubyte LEDBitmask) {
+	//B2 (0x04 or B2): IR detected output address (only use in autonomous)
+	//B3 (0x08 or B3): block detected output address
+	//B4 (0x0F or B4): robot lifting output address
+	//B5 (0x20 or B5): stopper in output address
+	HTSPBwriteIO(HTSPB, LEDBitmask);
 }
 
 void updateRobot(teleopState *state) {
@@ -272,6 +303,7 @@ void updateRobot(teleopState *state) {
 	servo[wrist]=state->wristPos;
 	servo[elbow]=state->elbowPos;
 	servo[stopper]=state->stopperPos;
+	LEDController(state->LEDBitmask);
 }
 
 void stopRobot() {

@@ -64,6 +64,12 @@ const tMUXSensor HTGYRO = msensor_S4_4;
 #define ELBOWIN 0
 #define ELBOWOUT 115
 
+//LEDBitmask addres definitions
+#define B2 0x04 //IR detected output address
+#define B3 0x08 //block detected output address
+#define B4 0x0F //robot lifting output address
+#define B5 0x20 //stopper in output address
+
 #ifdef AUDIO_DEBUG_ENABLED
 #define AUDIO_DEBUG(frequency, duration) PlayTone(frequency, duration)
 #else
@@ -92,12 +98,14 @@ typedef struct{
 
 void initialize(RobotState *state);
 void getSensors(RobotState *state);
+void LEDController(ubyte LEDBitmask);
 void resetGyroAccel(RobotState * state);
 void drive(int leftSpeed, int rightSpeed);
 void stopMotors();
 void showDiagnostics(RobotState *state);
 
 void initialize(RobotState *state){
+	HTSPBsetupIO(HTSPB, 0xFF);
 	memset(state, 0, sizeof(state));
 	motor[leftTread] = 0;
 	motor[rightTread] = 0;
@@ -175,6 +183,7 @@ task main() {
 
 	AUDIO_DEBUG(500,10);
 	time1[T1] = 0;
+	LEDController(B2);
 	while(state.currentState == SCOREBLOCK){
 		getSensors(&state);
 		if(!special){
@@ -189,6 +198,7 @@ task main() {
 		servo[elbow] = ELBOWIN;
 		state.currentState = LINEFOLLOWER2;
 	}
+	LEDController(0x00);
 
 	AUDIO_DEBUG(500,10);
 	time1[T1] = 0;
@@ -362,6 +372,14 @@ void getSensors(RobotState *state){
 	showDiagnostics(state);
 
 	//*********************************************************
+}
+
+void LEDController(ubyte LEDBitmask) {
+	//B2 (0x04 or B2): IR detected output address (only use in autonomous)
+	//B3 (0x08 or B3): block detected output address
+	//B4 (0x0F or B4): robot lifting output address
+	//B5 (0x20 or B5): stopper in output address
+	HTSPBwriteIO(HTSPB, LEDBitmask);
 }
 
 void resetGyroAccel(RobotState *state){
