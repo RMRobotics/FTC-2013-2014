@@ -49,12 +49,12 @@ const tMUXSensor HTGYRO = msensor_S4_4;
 
 #define TURNSPEED 75
 #define DRIVESPEED 50
-#define COMP .99
+#define COMP 1
 
-#define INLINEFOLLOWRATIO .5
-#define OUTLINEFOLLOWRATIO .5
-#define INNERSONARBOUND 25
-#define OUTERSONARBOUND 30
+#define INLINEFOLLOWRATIO 0.5
+#define OUTLINEFOLLOWRATIO 0.75
+#define INNERSONARBOUND 30
+#define OUTERSONARBOUND 32
 
 #define FLAGSERVOOUT 255
 #define FLAGSERVOIN 0
@@ -235,7 +235,7 @@ task main() {
 		leftSpeed = -DRIVESPEED;
 		rightSpeed = -DRIVESPEED;
 		drive(leftSpeed, rightSpeed);
-		if(time1[T1] >= 300){
+		if(time1[T1] >= 500){
 			state.currentState = PARKSEQUENCE1;
 		}
 	}
@@ -249,7 +249,7 @@ task main() {
 		leftSpeed = TURNSPEED;
 		rightSpeed = -TURNSPEED;
 		drive(leftSpeed, rightSpeed);
-		if(abs(state.degrees) >= 20 || TIMEOUT(500)){
+		if(abs(state.degrees) >= 23 || TIMEOUT(500)){
 			stopMotors();
 			state.currentState = PARKSEQUENCE2;
 		}
@@ -271,7 +271,7 @@ task main() {
 	while(state.currentState == PARKSEQUENCE3){
 		getSensors(&state);
 		drive(-TURNSPEED, TURNSPEED);
-		if(abs(state.degrees) >= 20 || TIMEOUT(500)){
+		if(abs(state.degrees) >= 34 || TIMEOUT(500)){
 			stopMotors();
 			state.currentState = PARKSEQUENCE4;
 		}
@@ -281,8 +281,8 @@ task main() {
 	time1[T1] = 0;
 	while(state.currentState == PARKSEQUENCE4){
 		getSensors(&state);
-		drive(-2*DRIVESPEED, -2*DRIVESPEED);
-		if(time1[T1] >= 2700){
+		drive(-DRIVESPEED, -DRIVESPEED);
+		if(time1[T1] >= 3500){
 			stopMotors();
 			state.currentState = END;
 		}

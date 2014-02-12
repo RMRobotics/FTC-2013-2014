@@ -1,7 +1,7 @@
 #pragma config(Hubs,  S1, HTMotor,  HTMotor,  HTMotor,  HTMotor)
 #pragma config(Hubs,  S2, HTServo,  none,     none,     none)
 #pragma config(Sensor, S3,     HTSPB,          sensorI2CCustom)
-#pragma config(Sensor, S4,     HTSMUX,         sensorI2CCustom)
+#pragma config(Sensor, S4,     SMUX,         sensorI2CCustom)
 #pragma config(Motor,  mtr_S1_C1_1,     leftTread,            tmotorTetrix, openLoop, reversed)
 #pragma config(Motor,  mtr_S1_C1_2,     leftTread2,            tmotorTetrix, openLoop, reversed)
 #pragma config(Motor,  mtr_S1_C2_1,     rightTread,           tmotorTetrix, openLoop)
@@ -21,9 +21,10 @@
 #include "JoystickDriver.c"  //Include file to "handle" the Bluetooth messages.
 #include "drivers/hitechnic-sensormux.h"
 #include "drivers/lego-ultrasound.h"
-#include "drivers/hitechnic-irseeker-v1.h"
+#include "drivers/hitechnic-irseeker-v2.h"
 #include "drivers/hitechnic-gyro.h"
 #include "drivers/hitechnic-accelerometer.h"
+#include "drivers/hitechnic-colour-v2.h"
 #include "drivers/hitechnic-superpro.h"
 
 const tMUXSensor HTIRS = msensor_S4_1;
@@ -44,7 +45,7 @@ const tMUXSensor HTGYRO = msensor_S4_4;
 //LEDBitmask addres definitions
 #define B2 0x04 //IR detected output address
 #define B3 0x08 //block detected output address
-#define B4 0x0F //robot lifting output address
+#define B4 0x10 //robot lifting output address
 #define B5 0x20 //stopper in output address
 
 typedef struct {
@@ -250,9 +251,11 @@ void updateJoystickInput(teleopState *state) {
 	//stopper servo
 	if (state->joy.joy1_TopHat == 2) {
 		state->stopperPos = STOPPERIN;
-		state->LEDBitmask = state->LEDBitmask | B5;
 	} else if (state->joy.joy1_TopHat == 6) {
 		state->stopperPos = STOPPEROUT;
+	}
+	if (state->stopperPos == STOPPERIN){
+		state->LEDBitmask = state->LEDBitmask | B5;
 	}
 
 	//wrist servo
@@ -271,7 +274,11 @@ void updateJoystickInput(teleopState *state) {
 }
 
 void updateSensorInput(teleopState *state) {
-	if (SensorValue[color] == YELLOWCOLOR){
+	int red, green, blue;
+	if (!HTCS2readRGB(color, red, green, blue)) {
+		//do nothing
+	}
+	if (red - blue > 10 && green - blue > 10) {
 		state->LEDBitmask = state->LEDBitmask | B3;
 	}
 }

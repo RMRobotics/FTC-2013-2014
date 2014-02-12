@@ -24,6 +24,7 @@
 #include "drivers/hitechnic-irseeker-v1.h"
 #include "drivers/hitechnic-gyro.h"
 #include "drivers/hitechnic-accelerometer.h"
+#include "drivers/hitechnic-colour-v2.h"
 #include "drivers/hitechnic-superpro.h"
 
 const tMUXSensor HTIRS = msensor_S4_1;
@@ -45,8 +46,12 @@ task main()
 	waitForStart();
 motor[leftTread] = -100;
 motor[rightTread] = -100;
+motor[leftTread2] = -100;
+motor[rightTread2] = -100;
 wait1Msec(3500);
 motor[leftTread] = 0;
 motor[rightTread] = 0;
+motor[leftTread2] = -100;
+motor[rightTread2] = -100;
 
 }

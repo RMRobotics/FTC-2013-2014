@@ -31,10 +31,19 @@ const tMUXSensor sonar = msensor_S4_2;
 const tMUXSensor color = msensor_S4_3;
 const tMUXSensor HTGYRO = msensor_S4_4;
 
+#define STOPPERIN 255
+#define STOPPEROUT 0
+
 typedef struct {
+	TNxtButtons oldNxtButton;
+	short nxtButtonChanged;
+
+	bool mode;
+
 	int harvesterSpeed;
 	int leftHangSpeed;
 	int rightHangSpeed;
+	int stopperPos;
 } nxtState;
 
 void initialize(nxtState *state);
@@ -60,6 +69,17 @@ void initialize(nxtState *state) {
 }
 
 void updateInput(nxtState *state) {
+	state->nxtButtonChanged = state->oldNxtButton ^ nNxtButtonPressed;
+	state->oldNxtButton = nNxtButtonPressed;
+
+	if (nNxtButtonPressed == 3 && state->nxtButtonChanged)
+		state->mode = !state->mode;
+
+	if (state->mode)
+		state->stopperPos = STOPPERIN;
+	else
+		state->stopperPos = STOPPEROUT;
+
 	if (nNxtButtonPressed == 1){
 		state->harvesterSpeed = 100;
 	}else if (nNxtButtonPressed == 2){
@@ -68,6 +88,7 @@ void updateInput(nxtState *state) {
 		state->harvesterSpeed = 0;
 		state->harvesterSpeed = 0;
 	}
+
 	state->leftHangSpeed = 0;
 	state->rightHangSpeed = 0;
 }
@@ -76,6 +97,7 @@ void updateRobot(nxtState *state) {
 	motor[harvester]=state->harvesterSpeed;
 	motor[leftHang]=state->leftHangSpeed;
 	motor[rightHang]=state->rightHangSpeed;
+	servo[stopper] = state->stopperPos;
 }
 
 void showDiagnostics(nxtState *state) {
