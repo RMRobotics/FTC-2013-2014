@@ -43,10 +43,10 @@ const tMUXSensor HTGYRO = msensor_S4_4;
 #define ELBOWOUT 115
 
 //LEDBitmask addres definitions
-#define B2 0x04 //IR detected output address
-#define B3 0x08 //block detected output address
-#define B4 0x10 //robot lifting output address
-#define B5 0x20 //stopper in output address
+#define B2 0x04 //IR Detected output address
+#define B3 0x08 //Block Detected output address
+#define B4 0x10 //Robot Lifting output address
+#define B5 0x20 //Stopper In output address
 
 typedef struct {
 	TJoystick joy;
@@ -290,10 +290,10 @@ int joyButton(short bitmask, int button)
 }
 
 void LEDController(ubyte LEDBitmask) {
-	//B2 (0x04 or B2): IR detected output address (only use in autonomous)
-	//B3 (0x08 or B3): block detected output address
-	//B4 (0x0F or B4): robot lifting output address
-	//B5 (0x20 or B5): stopper in output address
+	//B2 (0x04): IR detected output address (only use in autonomous)
+	//B3 (0x08): Block Detected output address
+	//B4 (0x0F): Robot Lifting output address
+	//B5 (0x20): Stopper In output address
 	HTSPBwriteIO(HTSPB, LEDBitmask);
 }
 

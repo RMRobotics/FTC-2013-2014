@@ -246,9 +246,7 @@ task main() {
 	resetGyroAccel(&state);
 	while(state.currentState == PARKSEQUENCE1){
 		getSensors(&state);
-		leftSpeed = TURNSPEED;
-		rightSpeed = -TURNSPEED;
-		drive(leftSpeed, rightSpeed);
+		drive(TURNSPEED, -TURNSPEED);
 		if(abs(state.degrees) >= 20 || TIMEOUT(500)){
 			stopMotors();
 			state.currentState = PARKSEQUENCE2;
