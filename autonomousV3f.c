@@ -112,6 +112,7 @@ void initialize(RobotState *state){
 	motor[rightTread] = 0;
 	servo[wrist] = WRISTIN;
 	servo[elbow] = ELBOWIN;
+	servo[stopper] = STOPPERIN;
 
 	// Calibrate the gyro, make sure you hold the sensor still
 	HTGYROstartCal(HTGYRO);
@@ -157,6 +158,8 @@ task main() {
 		drive(leftSpeed, rightSpeed);
 		if(time1[T1] > 2000){
 			if(state.dist > 50){
+				leftSpeed = 25;
+				rightSpeed = 25;
 				numTimeGreater50++;
 				if(numTimeGreater50 > 10) {
 					state.currentState = GOTOEND;
@@ -187,15 +190,16 @@ task main() {
 	LEDController(B2);
 	while(state.currentState == SCOREBLOCK){
 		getSensors(&state);
-		if(!special){
-			wait1Msec(750);
-		}
+		//if(!special){
+		//	wait1Msec(500);
+		//}
 		stopMotors();
 		servo[elbow] = ELBOWOUT;
 		wait1Msec(100);
 		servo[wrist] = WRISTOUT;
-		wait1Msec(400);
+		wait1Msec(500);
 		servo[wrist] = WRISTIN;
+		wait1Msec(100);
 		servo[elbow] = ELBOWIN;
 		state.currentState = LINEFOLLOWER2;
 	}
@@ -207,21 +211,23 @@ task main() {
 		getSensors(&state);
 		drive(leftSpeed, rightSpeed);
 		if(state.dist >= 50){
+			leftSpeed = 25;
+			rightSpeed = 25;
 			numTimeGreater50++;
 			if(numTimeGreater50 > 10){
 				state.currentState = GOTOEND;
 			}
-			} else if(state.dist > OUTERSONARBOUND){
+		} else if(state.dist > OUTERSONARBOUND){
 			leftSpeed  = DRIVESPEED;
 			rightSpeed = DRIVESPEED*OUTLINEFOLLOWRATIO;
 			numTimeGreater50 = 0;
-			}else if(state.dist < INNERSONARBOUND){
+		}else if(state.dist < INNERSONARBOUND){
 			leftSpeed = DRIVESPEED*INLINEFOLLOWRATIO;
 			rightSpeed = DRIVESPEED;
 			numTimeGreater50 = 0;
-			}else if(TIMEOUT(1500)){
+		}else if(TIMEOUT(1500)){
 			state.currentState = GOTOEND;
-			}else { //in range
+		}else { //in range
 			leftSpeed = DRIVESPEED;
 			rightSpeed = DRIVESPEED;
 			numTimeGreater50 = 0;
@@ -255,10 +261,11 @@ task main() {
 
 	AUDIO_DEBUG(500,10);
 	time1[T1] = 0;
+	motor[harvester] = 100;
 	while(state.currentState == PARKSEQUENCE2){
 		getSensors(&state);
 		drive(DRIVESPEED, DRIVESPEED);
-		if(time1[T1] > 4000){
+		if(time1[T1] > 6000){
 			state.currentState = PARKSEQUENCE3;
 		}
 	}
@@ -274,13 +281,15 @@ task main() {
 			state.currentState = PARKSEQUENCE4;
 		}
 	}
+	motor[harvester] = 0;
 
 	AUDIO_DEBUG(500,10);
 	time1[T1] = 0;
 	while(state.currentState == PARKSEQUENCE4){
 		getSensors(&state);
 		drive(-2*DRIVESPEED, -2*DRIVESPEED);
-		if(time1[T1] >= 2700){
+		if(state.dist < 75  && time1[T1] >= 2500){
+			wait1Msec(1500);
 			stopMotors();
 			state.currentState = END;
 		}
@@ -400,6 +409,7 @@ void stopMotors(){
 	motor[rightTread] = 0;
 	motor[leftTread2] = 0;
 	motor[rightTread2] = 0;
+	motor[harvester] = 0;
 }
 
 void showDiagnostics(RobotState *state){

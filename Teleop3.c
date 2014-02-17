@@ -34,7 +34,7 @@ const tMUXSensor HTGYRO = msensor_S4_4;
 
 #define FLAGSERVOOUT 255
 #define FLAGSERVOIN 0
-#define FLAGSERVOSPEED 0.5
+#define FLAGSERVOSPEED 1
 #define STOPPERIN 255
 #define STOPPEROUT 0
 #define WRISTIN 255

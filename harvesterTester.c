@@ -31,6 +31,12 @@ const tMUXSensor sonar = msensor_S4_2;
 const tMUXSensor color = msensor_S4_3;
 const tMUXSensor HTGYRO = msensor_S4_4;
 
+//LEDBitmask addres definitions
+#define B2 0x04 //IR Detected output address
+#define B3 0x08 //Block Detected output address
+#define B4 0x10 //Robot Lifting output address
+#define B5 0x20 //Stopper In output address
+
 #define STOPPERIN 255
 #define STOPPEROUT 0
 
@@ -39,6 +45,7 @@ typedef struct {
 	short nxtButtonChanged;
 
 	bool mode;
+	ubyte LEDBitmask;
 
 	int harvesterSpeed;
 	int leftHangSpeed;
@@ -65,6 +72,7 @@ task main()
 
 void initialize(nxtState *state) {
 	memset(state, 0, sizeof(state));
+	HTSPBsetupIO(HTSPB, 0xFF);
 	updateRobot(state);
 }
 
@@ -75,10 +83,13 @@ void updateInput(nxtState *state) {
 	if (nNxtButtonPressed == 3 && state->nxtButtonChanged)
 		state->mode = !state->mode;
 
-	if (state->mode)
+	if (state->mode) {
 		state->stopperPos = STOPPERIN;
-	else
+		state->LEDBitmask = B5;
+	} else {
 		state->stopperPos = STOPPEROUT;
+		state->LEDBitmask = 0x00;
+	}
 
 	if (nNxtButtonPressed == 1){
 		state->harvesterSpeed = 100;
@@ -98,6 +109,7 @@ void updateRobot(nxtState *state) {
 	motor[leftHang]=state->leftHangSpeed;
 	motor[rightHang]=state->rightHangSpeed;
 	servo[stopper] = state->stopperPos;
+	HTSPBwriteIO(HTSPB, state->LEDBitmask);
 }
 
 void showDiagnostics(nxtState *state) {
