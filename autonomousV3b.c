@@ -52,9 +52,9 @@ const tMUXSensor HTGYRO = msensor_S4_4;
 #define COMP .99
 
 #define INLINEFOLLOWRATIO .5
-#define OUTLINEFOLLOWRATIO .5
+#define OUTLINEFOLLOWRATIO .68
 #define INNERSONARBOUND 25
-#define OUTERSONARBOUND 30
+#define OUTERSONARBOUND 35
 
 #define FLAGSERVOOUT 255
 #define FLAGSERVOIN 0
@@ -84,10 +84,12 @@ const tMUXSensor HTGYRO = msensor_S4_4;
 #endif
 
 typedef struct{
+	int delayTime;
 	int currentState;
 
 	int irDir;
 	int dist;
+	int prevDist;
 	int time;
 	float degrees;
 	//float x_distance;
@@ -107,6 +109,11 @@ void showDiagnostics(RobotState *state);
 
 void initialize(RobotState *state){
 	HTSPBsetupIO(HTSPB, 0xFF);
+	while (externalBatteryAvg < 0){
+		HTSPBwriteIO(HTSPB, B3);
+		PlayTone(700, 1);
+	}
+	HTSPBwriteIO(HTSPB, 0x00);
 	memset(state, 0, sizeof(state));
 	motor[leftTread] = 0;
 	motor[rightTread] = 0;
@@ -116,6 +123,19 @@ void initialize(RobotState *state){
 
 	// Calibrate the gyro, make sure you hold the sensor still
 	HTGYROstartCal(HTGYRO);
+
+	TNxtButtons oldButton = nNxtButtonPressed;
+	while(nNxtButtonPressed != 3){
+		PlayTone(500, 1);
+		short nxtButtonChanged = oldButton ^ nNxtButtonPressed;
+		oldButton = nNxtButtonPressed;
+		if (nNxtButtonPressed == 1 && nxtButtonChanged) {
+			state->delayTime += 1;
+		} else if (nNxtButtonPressed == 2 && nxtButtonChanged) {
+			state->delayTime -= 1;
+		}
+		showDiagnostics(state);
+	}
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -134,7 +154,8 @@ task main() {
 	int numTimeGreater50 = 0;
 	bool special;
 
-	//waitForStart();
+	waitForStart();
+	wait1Msec(state.delayTime*1000);
 	//state.lastSensorCheckTime = time1[T2];
 
 	AUDIO_DEBUG(500, 10);
@@ -176,6 +197,13 @@ task main() {
 			leftSpeed  = DRIVESPEED*INLINEFOLLOWRATIO;
 			rightSpeed = DRIVESPEED;
 		}else if(state.dist > OUTERSONARBOUND){
+			if(state.prevDist < state.dist) {
+				do {
+					getSensors(state);
+					leftSpeed  = DRIVESPEED*INLINEFOLLOWRATIO;
+					rightSpeed = DRIVESPEED;
+				} while(state.prevDist > state.dist);
+			}
 			leftSpeed = DRIVESPEED;
 			rightSpeed = DRIVESPEED*OUTLINEFOLLOWRATIO;
 		}else { //in range
@@ -253,7 +281,7 @@ task main() {
 	while(state.currentState == PARKSEQUENCE1){
 		getSensors(&state);
 		drive(TURNSPEED, -TURNSPEED);
-		if(abs(state.degrees) >= 20 || TIMEOUT(500)){
+		if(abs(state.degrees) >= 15 || TIMEOUT(500)){
 			stopMotors();
 			state.currentState = PARKSEQUENCE2;
 		}
@@ -261,10 +289,11 @@ task main() {
 
 	AUDIO_DEBUG(500,10);
 	time1[T1] = 0;
+	motor[harvester] = 100;
 	while(state.currentState == PARKSEQUENCE2){
 		getSensors(&state);
 		drive(DRIVESPEED, DRIVESPEED);
-		if(time1[T1] > 3000){
+		if(time1[T1] > 6000){
 			state.currentState = PARKSEQUENCE3;
 		}
 	}
@@ -275,11 +304,12 @@ task main() {
 	while(state.currentState == PARKSEQUENCE3){
 		getSensors(&state);
 		drive(TURNSPEED, -TURNSPEED);
-		if(abs(state.degrees) >= 60 || TIMEOUT(500)){
+		if(abs(state.degrees) >= 40 || TIMEOUT(500)){
 			stopMotors();
 			state.currentState = PARKSEQUENCE4;
 		}
 	}
+	motor[harvester] = 0;
 
 	AUDIO_DEBUG(500,10);
 	time1[T1] = 0;
@@ -334,6 +364,7 @@ void getSensors(RobotState *state){
 
 	//***********************Sonar*****************************
 
+	state->prevDist = state->dist;
 	state->dist = USreadDist(sonar);
 
 	//*********************************************************
@@ -412,36 +443,40 @@ void stopMotors(){
 
 void showDiagnostics(RobotState *state){
 	//create label
+	string displayDelayTime = "delay = ";
 	string displayState = "state = ";
 	string sonarSensor = "sonar = ";
 	string irSensor = "IR = ";
 	string gyroSensor = "Gyro =";
-	string timer = "Timer = ";
+	string time = "Time = ";
 	string batteryLevel = "power = ";
 
 	//store variable in a string
-	string string0 = state->currentState;
-	string string1 = state->dist;
-	string string2 = state->irDir;
-	string string3 = state->degrees;
-	string string4 = time1[T1];
-	string string5 = externalBatteryAvg;
+	string string0 = state->delayTime;
+	string string1 = state->currentState;
+	string string2 = state->dist;
+	string string3 = state->irDir;
+	string string4 = state->degrees;
+	string string5 = time1[T1];
+	string string6 = externalBatteryAvg;
 
 	//concat variable with label
-	strcat(displayState, string0);
-	strcat(sonarSensor, string1);
-	strcat(irSensor, string2);
-	strcat(gyroSensor, string3);
-	strcat(timer, string4);
-	strcat(batteryLevel, string5);
+	strcat (displayDelayTime, string0);
+	strcat(displayState, string1);
+	strcat(sonarSensor, string2);
+	strcat(irSensor, string3);
+	strcat(gyroSensor, string4);
+	strcat(time, string5);
+	strcat(batteryLevel, string6);
 
 	eraseDisplay();
 
 	//display label and value
-	nxtDisplayTextLine(1, displayState);
-	nxtDisplayTextLine(2, sonarSensor);
-	nxtDisplayTextLine(3, irSensor);
-	nxtDisplayTextLine(4, gyroSensor);
-	nxtDisplayTextLine(5, timer);
-	nxtDisplayTextLine(6, batteryLevel);
+	nxtDisplayTextLine(1, displayDelayTime);
+	nxtDisplayTextLine(2, displayState);
+	nxtDisplayTextLine(3, sonarSensor);
+	nxtDisplayTextLine(4, irSensor);
+	nxtDisplayTextLine(5, gyroSensor);
+	nxtDisplayTextLine(6, time);
+	nxtDisplayTextLine(7, batteryLevel);
 }

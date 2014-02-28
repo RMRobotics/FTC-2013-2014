@@ -34,13 +34,14 @@ const tMUXSensor HTGYRO = msensor_S4_4;
 
 #define FLAGSERVOOUT 255
 #define FLAGSERVOIN 0
-#define FLAGSERVOSPEED 1
+#define FLAGSERVOSPEED 3
 #define STOPPERIN 255
 #define STOPPEROUT 0
 #define WRISTIN 255
 #define WRISTOUT 50
 #define ELBOWIN 0
 #define ELBOWOUT 115
+#define COLORWAITTIME 500 //in milliseconds
 
 //LEDBitmask addres definitions
 #define B2 0x04 //IR Detected output address
@@ -84,6 +85,7 @@ void initialize(teleopState *state) {
 	state->stopperPos = STOPPEROUT;
 	updateRobot(state);
 	stopRobot();
+	time1[T1] = 0;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -170,6 +172,7 @@ task main()
 	waitForStart();
 
 	while(true){
+		HTSPBsetupIO(HTSPB, 0xFF);
 		currentState.LEDBitmask = 0x00; //clear LEDBitmask
 		updateJoystickInput(currentState);
 		updateSensorInput(currentState);
@@ -279,7 +282,10 @@ void updateSensorInput(teleopState *state) {
 		//do nothing
 	}
 	if (red - blue > 10 && green - blue > 10) {
-		state->LEDBitmask = state->LEDBitmask | B3;
+		if (time1[T1] > COLORWAITTIME)
+			state->LEDBitmask = state->LEDBitmask | B3;
+	} else {
+		time1[T1] = 0;
 	}
 }
 

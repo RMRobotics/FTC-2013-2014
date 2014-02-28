@@ -116,7 +116,7 @@ task main()
 	waitForStart();
 
 	drive(&state, 100, false, false); //parameters: SensorValues struct, time, use ir?, use sonar?
-	turn(&state, LEFT, 30); //parameters: SensorValues struct, direction, amount
+	turn(&state, RIGHT, 30); //parameters: SensorValues struct, direction, amount
 	drive(&state, 3000, false, false);
 	//*****score block******
 	servo[elbow] = ELBOWOUT;
