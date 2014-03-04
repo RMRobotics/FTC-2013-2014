@@ -63,7 +63,7 @@ task main() {
 		prevState = state.currentState;
 
 		if(state.currentState == FINDLINE_TURN){
-			drive(-TURNSPEED/1.7, TURNSPEED);
+			drive(0, TURNSPEED);
 			if(abs(state.degrees) >= 15){
 				state.currentState = FINDLINE_DRIVE;
 			}
