@@ -2,8 +2,7 @@ typedef struct{
 	short delayTime;
 	short currentState;
 
-	short lightVal1;
-	short lightVal2;
+	short color;
 	short irDir;
 	short dist;
 	short time;

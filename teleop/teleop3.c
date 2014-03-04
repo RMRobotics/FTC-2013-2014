@@ -1,5 +1,5 @@
 #pragma config(Hubs,  S1, HTMotor,  HTServo,  HTMotor,  HTMotor)
-#pragma config(Sensor, S2,     light1,         sensorLightActive)
+#pragma config(Sensor, S2,     color2,         sensorCOLORFULL)
 #pragma config(Sensor, S3,     HTSPB,          sensorI2CCustom)
 #pragma config(Sensor, S4,     SMUX,           sensorI2CCustom)
 #pragma config(Motor,  mtr_S1_C1_1,     leftTread,     tmotorTetrix, openLoop, reversed)

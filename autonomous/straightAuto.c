@@ -1,5 +1,5 @@
 #pragma config(Hubs,  S1, HTMotor,  HTServo,  HTMotor,  HTMotor)
-#pragma config(Sensor, S2,     light1,         sensorLightActive)
+#pragma config(Sensor, S2,     color2,         sensorCOLORFULL)
 #pragma config(Sensor, S3,     HTSPB,          sensorI2CCustom)
 #pragma config(Sensor, S4,     SMUX,           sensorI2CCustom)
 #pragma config(Motor,  mtr_S1_C1_1,     leftTread,     tmotorTetrix, openLoop, reversed)
@@ -20,7 +20,7 @@
 
 const tMUXSensor HTIRS = msensor_S4_1;
 const tMUXSensor sonar = msensor_S4_2;
-const tMUXSensor light2 = msensor_S4_3;
+const tMUXSensor color = msensor_S4_3;
 const tMUXSensor HTGYRO = msensor_S4_4;
 
 #define LEFT 1
@@ -33,8 +33,7 @@ const tMUXSensor HTGYRO = msensor_S4_4;
 typedef struct{
 	bool mode;
 	short irDir;
-	short lightVal1;
-	short lightVal2;
+	short color;
 	short dist;
 	short time;
 	float degrees;
@@ -42,7 +41,7 @@ typedef struct{
 
 void initialize(SensorValues *state);
 void getSensors(SensorValues *state);
-void drive(SensorValues *state, int time, bool senseLight, bool senseSonar);
+void drive(SensorValues *state, int time, bool senseColor, bool senseSonar);
 void turn (SensorValues *state, int dir, int amount);
 void showDiagnostics(SensorValues *state);
 
@@ -127,9 +126,14 @@ void getSensors(SensorValues *state){
 	//*********************************************************
 
 	//*********************Light Sensors***********************
-	//LSvalRaw(); //return light sensor raw values
-	state->lightVal1 = LSvalNorm(light1); //return light sensor normalized values
-	state->lightVal2 = LSvalNorm(light2);
+	switch(SensorValue[color]){
+		case REDCOLOR: state->color = RED; break;
+		case GREENCOLOR:
+		case BLUECOLOR: state->color = BLUE; break;
+		case WHITECOLOR: state->color = WHITE; break;
+		default:
+		case BLACKCOLOR: state->color = BLACK;
+	}
 	//*********************************************************
 
 	//*****************Show Debugging Window*******************
@@ -137,20 +141,20 @@ void getSensors(SensorValues *state){
 	//*********************************************************
 }
 
-void drive(SensorValues *state, int time, bool senseLight, bool senseSonar) {
+void drive(SensorValues *state, int time, bool senseColor, bool senseSonar) {
 	getSensors(state);
-	if (senseLight)
-		senseLight = (state->lightVal1 == WHITE);
+	if (senseColor)
+		senseColor = (state->color == WHITE);
 	if (senseSonar)
 		senseSonar = state->dist < 75;
 
 	time1[T1] = 0;
-	bool stopCondition = time1[T1] > time || senseLight || senseSonar;
+	bool stopCondition = time1[T1] > time || senseColor || senseSonar;
 
 	while(!stopCondition){
 		motor[leftTread] = COMP*DRIVESPEED;
 		motor[rightTread] = DRIVESPEED;
-		stopCondition = time1[T1] > time || senseLight || senseSonar;
+		stopCondition = time1[T1] > time || senseColor || senseSonar;
 	}
 
 	motor[leftTread] = 0;

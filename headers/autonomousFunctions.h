@@ -17,7 +17,7 @@ void initialize(RobotState *state){
 
 	TNxtButtons oldButton = nNxtButtonPressed;
 	while(nNxtButtonPressed != 3){
-		PlaySound(soundBeepBeep);
+		PlaySound(soundBlip);
 		short nxtButtonChanged = oldButton ^ nNxtButtonPressed;
 		oldButton = nNxtButtonPressed;
 		if (nNxtButtonPressed == 1 && nxtButtonChanged) {
@@ -76,10 +76,16 @@ void getSensors(RobotState *state){
 	//state->z_distance = z_axis * 0.02;
 	//*********************************************************
 
-	//*********************Light Sensors***********************
-	//LSvalRaw(); //return light sensor raw values
-	state->lightVal1 = LSvalNorm(light1); //return light sensor normalized values
-	state->lightVal2 = LSvalNorm(light2);
+	//*********************Color Sensors***********************
+	switch (SensorValue[color2])
+  {
+  case GREENCOLOR:
+  case BLUECOLOR:     state->color = BLUE;      break;
+  case REDCOLOR:      state->color = RED;       break;
+  case WHITECOLOR:    state->color = WHITE;     break;
+  default:
+  case BLACKCOLOR:    state->color = BLACK;
+  }
 	//*********************************************************
 
 	//*****************Show Debugging Window*******************
@@ -130,7 +136,7 @@ void showDiagnostics(RobotState *state){
 	string sonarSensor = "sonar = ";
 	string irSensor = "IR = ";
 	string gyroSensor = "Gyro =";
-	string time = "Time = ";
+	string displayColor = "Color = ";
 	string batteryLevel = "power = ";
 
 	//store variable in a string
@@ -139,7 +145,7 @@ void showDiagnostics(RobotState *state){
 	string string2 = state->dist;
 	string string3 = state->irDir;
 	string string4 = state->degrees;
-	string string5 = time1[T1];
+	string string5 = state->color;
 	string string6 = externalBatteryAvg;
 
 	//concat variable with label
@@ -148,7 +154,7 @@ void showDiagnostics(RobotState *state){
 	strcat(sonarSensor, string2);
 	strcat(irSensor, string3);
 	strcat(gyroSensor, string4);
-	strcat(time, string5);
+	strcat(displayColor, string5);
 	strcat(batteryLevel, string6);
 
 	eraseDisplay();
@@ -159,6 +165,6 @@ void showDiagnostics(RobotState *state){
 	nxtDisplayTextLine(3, sonarSensor);
 	nxtDisplayTextLine(4, irSensor);
 	nxtDisplayTextLine(5, gyroSensor);
-	nxtDisplayTextLine(6, time);
+	nxtDisplayTextLine(6, displayColor);
 	nxtDisplayTextLine(7, batteryLevel);
 }

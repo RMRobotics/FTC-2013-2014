@@ -1,5 +1,5 @@
 #pragma config(Hubs,  S1, HTMotor,  HTServo,  HTMotor,  HTMotor)
-#pragma config(Sensor, S2,     light1,         sensorLightActive)
+#pragma config(Sensor, S2,     color2,         sensorCOLORFULL)
 #pragma config(Sensor, S3,     HTSPB,          sensorI2CCustom)
 #pragma config(Sensor, S4,     SMUX,           sensorI2CCustom)
 #pragma config(Motor,  mtr_S1_C1_1,     leftTread,     tmotorTetrix, openLoop, reversed)
@@ -20,7 +20,7 @@
 
 const tMUXSensor HTIRS = msensor_S4_1;
 const tMUXSensor sonar = msensor_S4_2;
-const tMUXSensor light2 = msensor_S4_3;
+const tMUXSensor color = msensor_S4_3;
 const tMUXSensor HTGYRO = msensor_S4_4;
 
 #include "../headers/constants.h"
@@ -41,9 +41,11 @@ task main() {
 	initialize(&state);
 	short leftSpeed, rightSpeed;
 	short prevState = 999;
+	bool distLess50;
+	bool irDetected = false;
 	bool goBackward = false;
 
-	waitForStart();
+	//waitForStart();
 	wait1Msec(state.delayTime*1000);
 
 	while(true){
@@ -55,75 +57,80 @@ task main() {
 			resetGyroAccel(&state);
 			LEDController(0x00);
 			leftSpeed = 0;
-			rightSpeed = 0;
+			distLess50 = false;
 		}
 
 		getSensors(&state);
 		prevState = state.currentState;
 
 		if(state.currentState == FINDLINE_TURN){
-			drive(-TURNSPEED, TURNSPEED);
+			drive(0, TURNSPEED);
 			if(abs(state.degrees) >= 15){
 				state.currentState = FINDLINE_DRIVE;
 			}
-		}else if (state.currentState == FINDLINE_DRIVE) {
+		} else if (state.currentState == FINDLINE_DRIVE) {
 			drive(DRIVESPEED, DRIVESPEED);
-			if(state.lightVal1 == RED || state.lightVal1 == BLUE){
+			if(state.color == RED || state.color == BLUE){
 				state.currentState = LINEFOLLOW;
 			}
-		}else if (state.currentState == LINEFOLLOW) {
-			if (state.irDir == 5) {
+		} else if (state.currentState == LINEFOLLOW) {
+			if (state.dist < 50) {
+				distLess50 = true;
+			}
+			if (state.irDir == 5 && irDetected == false) {
 				state.currentState = SCOREBLOCK;
-			}else if (state.dist > 50) {
-				state.currentState = PARK_TURN1;
+			} else if (state.dist > 50 && distLess50) {
+				state.currentState = GOTOEND;
 			}else if (goBackward){
-				if (state.lightVal1 == RED || state.lightVal1 == BLUE) {
-					leftSpeed = -DRIVESPEED;
-					rightSpeed = -DRIVESPEED*INLINEFOLLOWRATIO;
-				}else {
+				if (state.color == RED || state.color == BLUE) {
 					leftSpeed = -DRIVESPEED*OUTLINEFOLLOWRATIO;
 					rightSpeed = -DRIVESPEED;
+				}else {
+					leftSpeed = -DRIVESPEED;
+					rightSpeed = -DRIVESPEED*INLINEFOLLOWRATIO;
 				}
-			}else {
-				if (state.lightVal1 == RED || state.lightVal1 == BLUE) {
+			} else {
+				if (state.color == RED || state.color == BLUE) {
 					leftSpeed = DRIVESPEED*OUTLINEFOLLOWRATIO;
 					rightSpeed = DRIVESPEED;
-				}else {
+				} else {
 					leftSpeed = DRIVESPEED;
 					rightSpeed = DRIVESPEED*INLINEFOLLOWRATIO;
 				}
 			}
 			drive(leftSpeed, rightSpeed);
-		}else if (state.currentState == SCOREBLOCK) {
+		} else if (state.currentState == SCOREBLOCK) {
+			irDetected = true;
+			goBackward = true;
 			LEDController(B2);
 			blockScorer();
-			goBackward = true;
 			state.currentState = LINEFOLLOW;
+		}else if (state.currentState == GOTOEND) {
+			drive(-DRIVESPEED, -DRIVESPEED);
+			if(time1[T1] >= 300) {
+				state.currentState = PARK_TURN1;
+			}
 		}else if (state.currentState == PARK_TURN1) {
 			drive(-TURNSPEED, TURNSPEED);
 			if(abs(state.degrees) >= 30){
 				state.currentState = PARK_DRIVE1;
 			}
 		}else if (state.currentState == PARK_DRIVE1) {
-			drive(DRIVESPEED, DRIVESPEED);
-			if(state.lightVal2 == RED || state.lightVal2 == BLUE){
+			drive(-DRIVESPEED, -DRIVESPEED);
+			if(state.color == WHITE){
 				state.currentState = PARK_TURN2;
 			}
 		}else if (state.currentState == PARK_TURN2) {
 			drive(-TURNSPEED, TURNSPEED);
-			if(abs(state.degrees) >= 30){
+			if(abs(state.degrees) >= 35){
 				state.currentState = PARK_DRIVE2;
 			}
 		}else if (state.currentState == PARK_DRIVE2) {
 			drive(-2*DRIVESPEED, -2*DRIVESPEED);
-			if(state.dist < 75  && time1[T1] >= 2500){
+			if(state.dist < 75  && time1[T1] >= 500){
 				wait1Msec(1500);
 				state.currentState = END;
 			}
-		}else if (state.currentState == END){
-			break;
-		}else { //if error occured
-			break;
 		}
 	}
 }

@@ -5,11 +5,12 @@
 #define FINDLINE_DRIVE 1
 #define LINEFOLLOW 2
 #define SCOREBLOCK 3
-#define PARK_TURN1 4
-#define PARK_DRIVE1 5
-#define PARK_TURN2 6
-#define PARK_DRIVE2 7
-#define END 8
+#define GOTOEND 4
+#define PARK_TURN1 5
+#define PARK_DRIVE1 6
+#define PARK_TURN2 7
+#define PARK_DRIVE2 8
+#define END 9
 
 #ifdef __BACKWARDSTART__
 	#define TURNSPEED -75
@@ -21,8 +22,8 @@
 
 #define COMP .99
 
-#define INLINEFOLLOWRATIO .75
-#define OUTLINEFOLLOWRATIO .75
+#define INLINEFOLLOWRATIO .5
+#define OUTLINEFOLLOWRATIO .5
 //#define INNERSONARBOUND 25
 //#define OUTERSONARBOUND 35
 #define WHITE 0

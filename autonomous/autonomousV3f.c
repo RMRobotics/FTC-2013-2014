@@ -1,5 +1,5 @@
 #pragma config(Hubs,  S1, HTMotor,  HTServo,  HTMotor,  HTMotor)
-#pragma config(Sensor, S2,     light1,         sensorLightActive)
+#pragma config(Sensor, S2,     color2,         sensorCOLORFULL)
 #pragma config(Sensor, S3,     HTSPB,          sensorI2CCustom)
 #pragma config(Sensor, S4,     SMUX,           sensorI2CCustom)
 #pragma config(Motor,  mtr_S1_C1_1,     leftTread,     tmotorTetrix, openLoop, reversed)
@@ -20,7 +20,7 @@
 
 const tMUXSensor HTIRS = msensor_S4_1;
 const tMUXSensor sonar = msensor_S4_2;
-const tMUXSensor light2 = msensor_S4_3;
+const tMUXSensor color = msensor_S4_3;
 const tMUXSensor HTGYRO = msensor_S4_4;
 
 #include "../headers/constants.h"
@@ -41,9 +41,10 @@ task main() {
 	initialize(&state);
 	short leftSpeed, rightSpeed;
 	short prevState = 999;
-	bool use2ndLight;
+	bool distLess50;
+	bool irDetected = false;
 
-	waitForStart();
+	//waitForStart();
 	wait1Msec(state.delayTime*1000);
 
 	while(true){
@@ -55,41 +56,32 @@ task main() {
 			resetGyroAccel(&state);
 			LEDController(0x00);
 			leftSpeed = 0;
-			rightSpeed = 0;
-			use2ndLight = false;
+			distLess50 = false;
 		}
 
 		getSensors(&state);
 		prevState = state.currentState;
 
 		if(state.currentState == FINDLINE_TURN){
-			drive(-TURNSPEED, TURNSPEED);
+			drive(-TURNSPEED/1.7, TURNSPEED);
 			if(abs(state.degrees) >= 15){
 				state.currentState = FINDLINE_DRIVE;
 			}
 		} else if (state.currentState == FINDLINE_DRIVE) {
 			drive(DRIVESPEED, DRIVESPEED);
-			if(state.lightVal1 == RED || state.lightVal1 == BLUE){
+			if(state.color == RED || state.color == BLUE){
 				state.currentState = LINEFOLLOW;
 			}
 		} else if (state.currentState == LINEFOLLOW) {
-			if (state.lightVal2 == RED || state.lightVal2 == BLUE) {
-				use2ndLight = true;
+			if (state.dist < 50) {
+				distLess50 = true;
 			}
-			if (state.irDir == 5) {
+			if (state.irDir == 5 && irDetected == false) {
 				state.currentState = SCOREBLOCK;
-			} else if (state.dist > 50) {
+			} else if (state.dist > 50 && distLess50) {
 				state.currentState = PARK_TURN1;
-			} else if (use2ndLight) {
-				if (state.lightVal2 == RED || state.lightVal2 == BLUE) {
-					leftSpeed = DRIVESPEED;
-					rightSpeed = DRIVESPEED*INLINEFOLLOWRATIO;
-				} else {
-					leftSpeed = DRIVESPEED*OUTLINEFOLLOWRATIO;
-					rightSpeed = DRIVESPEED;
-				}
-			} else { //use 1st light
-				if (state.lightVal1 == RED || state.lightVal1 == BLUE) {
+			} else {
+				if (state.color == RED || state.color == BLUE) {
 					leftSpeed = DRIVESPEED*OUTLINEFOLLOWRATIO;
 					rightSpeed = DRIVESPEED;
 				} else {
@@ -99,24 +91,25 @@ task main() {
 			}
 			drive(leftSpeed, rightSpeed);
 		} else if (state.currentState == SCOREBLOCK) {
+			irDetected = true;
 			LEDController(B2);
 			blockScorer();
 			state.currentState = LINEFOLLOW;
 		} else if (state.currentState == PARK_TURN1) {
 			drive(TURNSPEED, -TURNSPEED);
-			if(abs(state.degrees) >= 15){
+			if(abs(state.degrees) >= 20){
 				state.currentState = PARK_DRIVE1;
 			}
 		} else if (state.currentState == PARK_DRIVE1) {
 			motor[harvester] = 100;
 			drive(DRIVESPEED, DRIVESPEED);
-			if(state.lightVal1 == RED || state.lightVal1 == BLUE){
+			if(state.color == RED || state.color == BLUE){
 				state.currentState = PARK_TURN2;
 			}
 		} else if (state.currentState == PARK_TURN2) {
 			motor[harvester] = 100;
 			drive(-TURNSPEED, TURNSPEED);
-			if(abs(state.degrees) >= 15){
+			if(abs(state.degrees) >= 20){
 				state.currentState = PARK_DRIVE2;
 			}
 		} else if (state.currentState == PARK_DRIVE2) {
