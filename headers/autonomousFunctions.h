@@ -94,6 +94,8 @@ void getSensors(RobotState *state){
 }
 
 void blockScorer(){
+	drive(DRIVESPEED, DRIVESPEED);
+	wait1Msec(500);
 	servo[elbow] = ELBOWOUT;
 	wait1Msec(100);
 	servo[wrist] = WRISTOUT;

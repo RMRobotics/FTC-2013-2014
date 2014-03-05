@@ -47,6 +47,8 @@ task main() {
 
 	//waitForStart();
 	wait1Msec(state.delayTime*1000);
+	drive(25, 25);
+	wait1Msec(1000);
 
 	while(true){
 		//if state changes: stop motors, play tone, reset timers, gyro and lights
@@ -128,7 +130,7 @@ task main() {
 		}else if (state.currentState == PARK_DRIVE2) {
 			drive(-2*DRIVESPEED, -2*DRIVESPEED);
 			if(state.dist < 75  && time1[T1] >= 500){
-				wait1Msec(1500);
+				wait1Msec(1000);
 				state.currentState = END;
 			}
 		}
