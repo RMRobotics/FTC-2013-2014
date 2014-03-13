@@ -1,6 +1,8 @@
+//enabling or disabling certain macros
 #define AUDIO_DEBUG_ENABLED
 //#define TIMEOUTS_ENABLED
 
+//state machine constants
 #define FINDLINE_TURN 0
 #define FINDLINE_DRIVE 1
 #define LINEFOLLOW 2
@@ -11,26 +13,30 @@
 #define PARK_TURN2 7
 #define PARK_DRIVE2 8
 #define END 9
+#define HARVEST 10
 
+//Drive and turn speeds
 #ifdef __BACKWARDSTART__
-	#define TURNSPEED -75
-	#define DRIVESPEED -50
+#define TURNSPEED -75
+#define DRIVESPEED -50
+#define ANGLESPECIAL 40
 #else
-	#define TURNSPEED 75
-	#define DRIVESPEED 50
+#define TURNSPEED 75
+#define DRIVESPEED 50
+#define ANGLESPECIAL 20
 #endif
 
+//compensation for robots tendency to drift right
 #define COMP .99
 
-#define INLINEFOLLOWRATIO .5
-#define OUTLINEFOLLOWRATIO .5
-//#define INNERSONARBOUND 25
-//#define OUTERSONARBOUND 35
+//line following constants
+#define LINEFOLLOWRATIO .5
 #define WHITE 0
 #define BLACK 1
 #define BLUE 2
 #define RED 3
 
+//servo positions
 #define FLAGSERVOOUT 255
 #define FLAGSERVOIN 0
 #define STOPPERIN 255
@@ -46,6 +52,7 @@
 #define B4 0x0F //robot lifting output address
 #define B5 0x20 //stopper in output address
 
+//*******************************macros*********************************
 #ifdef AUDIO_DEBUG_ENABLED
 #define AUDIO_DEBUG(frequency, duration) PlayTone(frequency, duration)
 #else
@@ -57,3 +64,10 @@
 #else
 #define TIMEOUT(time) time1[T1] > 100000000
 #endif
+
+#ifdef __BACKWARDSTART__
+#define DRIVESPECIAL(left, right) drive(-left, -right)
+#else
+#define DRIVESPECIAL(left, right) drive(left, right)
+#endif
+//**********************************************************************

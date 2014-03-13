@@ -1,5 +1,6 @@
 //function prototypes
 void initialize(RobotState *state);
+void setDelayTime(RobotState *state);
 void getSensors(RobotState *state);
 void blockScorer();
 void LEDController(ubyte LEDBitmask);
