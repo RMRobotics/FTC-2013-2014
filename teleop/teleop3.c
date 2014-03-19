@@ -29,6 +29,10 @@ typedef struct {
 
 	ubyte LEDBitmask;
 
+	int x_accel;
+	int y_accel;
+	int z_accel;
+
 	int leftSpeed;
 	int rightSpeed;
 	int harvesterSpeed;
@@ -263,6 +267,7 @@ void updateSensorInput(teleopState *state) {
 	} else {
 		time1[T1] = 0;
 	}
+	HTACreadAllAxes(HTACCEL, state->x_accel, state->y_accel, state->z_accel); //
 }
 
 int joyButton(short bitmask, int button)
@@ -305,16 +310,28 @@ void stopRobot() {
 void showDiagnostics(teleopState *state) {
 	//create label
 	string batteryLevel = "power = ";
+	string displayXAccel = "x-accel = ";
+	string displayYAccel = "y-accel = ";
+	string displayZAccel = "z-accel = ";
 
 	//store variable in a string
-	string string5 = externalBatteryAvg;
+	string string1 = externalBatteryAvg;
+	string string2 = state->x_accel;
+	string string3 = state->y_accel;
+	string string4 = state->z_accel;
 
 	//concat variable with label
-	strcat(batteryLevel, string5);
+	strcat(batteryLevel, string1);
+	strcat(displayXAccel, string2);
+	strcat(displayYAccel, string3);
+	strcat(displayZAccel, string4);
 
 	eraseDisplay();
 
 	//display label and value
-	nxtDisplayTextLine(3, "Teleop");
-	nxtDisplayTextLine(5, batteryLevel);
+	nxtDisplayTextLine(1, "Teleop");
+	nxtDisplayTextLine(2, batteryLevel);
+	nxtDisplayTextLine(3, displayXAccel);
+	nxtDisplayTextLine(4, displayYAccel);
+	nxtDisplayTextLine(5, displayZAccel);
 }

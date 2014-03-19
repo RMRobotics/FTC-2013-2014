@@ -1,6 +1,6 @@
 void initialize(RobotState *state){
 	HTSPBsetupIO(HTSPB, 0xFF);
-	while (externalBatteryAvg < 0 || HTSMUXreadPowerStatus(SMUX)){
+	while (externalBatteryAvg < 0 || HTSMUXreadPowerStatus(SMUX) || HTSMUXreadPowerStatus(SMUX2)){
 		HTSPBwriteIO(HTSPB, B3);
 		PlaySound(soundBeepBeep);
 	}
@@ -64,38 +64,34 @@ void getSensors(RobotState *state){
 
 	//*****************Gyro and Accelerometer******************
 	float rotSpeed = 0;
-	float x_axis, y_axis, z_axis = 0;
 
 	//Wait until 20ms has passed
 	wait1Msec(20);
 
-	// Read the current rotation speed
+	// Read the current rotation speed and acceleration in each of the axis
 	rotSpeed = HTGYROreadRot(HTGYRO);
-	HTACreadAllAxes(HTACCEL, x_axis, y_axis, z_axis);
+	HTACreadAllAxes(HTACCEL, state->x_accel, state->y_accel, state->z_accel);
 
-	// Crude shortegration: waited 20ms so distance moved/degrees turned would be speed * time
+	// Crude integration: waited 20ms so degrees turned would be speed * time
 	state->degrees += rotSpeed * 0.02;
-	state->x_distance = x_axis * 0.02;
-	state->y_distance = y_axis * 0.02;
-	state->z_distance = z_axis * 0.02;
 	//*********************************************************
 
 	//*********************Color Sensors***********************
-	switch (SensorValue[color2]) {
-  case GREENCOLOR:
-  case BLUECOLOR:     state->color2 = BLUE;      break;
-  case REDCOLOR:      state->color2 = RED;       break;
-  case WHITECOLOR:    state->color2 = WHITE;     break;
+	switch (HTCS2readColor(color2)) {
+  case 4:
+  case 2:     state->color2 = BLUE;      break;
+  case 9:     state->color2 = RED;       break;
+  case 17:    state->color2 = WHITE;     break;
   default:
-  case BLACKCOLOR:    state->color2 = BLACK;
+  case 12:    state->color2 = BLACK;
   }
-  switch (SensorValue[color]) {
-  case GREENCOLOR:
-  case BLUECOLOR:     state->color = BLUE;      break;
-  case REDCOLOR:      state->color = RED;       break;
-  case WHITECOLOR:    state->color = WHITE;     break;
+  switch (HTCS2readColor(color)) {
+  case 4:
+  case 2:     state->color = BLUE;      break;
+  case 9:     state->color = RED;       break;
+  case 17:    state->color = WHITE;     break;
   default:
-  case BLACKCOLOR:    state->color = BLACK;
+  case 12:    state->color = BLACK;
 	}
 	//*********************************************************
 
@@ -106,10 +102,10 @@ void getSensors(RobotState *state){
 
 void blockScorer(){
 	drive(DRIVESPEED, DRIVESPEED);
-	wait1Msec(300);
+	wait1Msec(150);
 	stopMotors();
 	servo[elbow] = ELBOWOUT;
-	wait1Msec(100);
+	wait1Msec(500);
 	servo[wrist] = WRISTOUT;
 	wait1Msec(500);
 	servo[wrist] = WRISTIN;
@@ -127,9 +123,6 @@ void LEDController(ubyte LEDBitmask) {
 
 void resetGyroAccel(RobotState *state){
 	state->degrees = 0;
-	state->x_distance = 0;
-	state->y_distance = 0;
-	state->z_distance = 0;
 }
 
 void drive(short leftSpeed, short rightSpeed){
@@ -151,7 +144,7 @@ void showDiagnostics(RobotState *state){
 	string irSensor = "IR = ";
 	string gyroSensor = "Gyro =";
 	string displayColor = "Color = ";
-	string batteryLevel = "power = ";
+	string displayAccel = "Accel = ";
 
 	//store variable in a string
 	string string0 = state->delayTime;
@@ -159,8 +152,8 @@ void showDiagnostics(RobotState *state){
 	string string2 = state->dist;
 	string string3 = state->irDir;
 	string string4 = state->degrees;
-	string string5 = state->color;
-	string string6 = externalBatteryAvg;
+	string string5 = state->color2;
+	string string6 = state->x_accel;
 
 	//concat variable with label
 	strcat (displayDelayTime, string0);
@@ -169,7 +162,7 @@ void showDiagnostics(RobotState *state){
 	strcat(irSensor, string3);
 	strcat(gyroSensor, string4);
 	strcat(displayColor, string5);
-	strcat(batteryLevel, string6);
+	strcat(displayAccel, string6);
 
 	eraseDisplay();
 
@@ -180,5 +173,5 @@ void showDiagnostics(RobotState *state){
 	nxtDisplayTextLine(4, irSensor);
 	nxtDisplayTextLine(5, gyroSensor);
 	nxtDisplayTextLine(6, displayColor);
-	nxtDisplayTextLine(7, batteryLevel);
+	nxtDisplayTextLine(7, displayAccel);
 }

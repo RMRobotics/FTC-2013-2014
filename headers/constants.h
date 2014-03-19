@@ -14,23 +14,24 @@
 #define PARK_DRIVE2 8
 #define END 9
 #define HARVEST 10
+#define INITIALSTATE 999
 
 //Drive and turn speeds
 #ifdef __BACKWARDSTART__
 #define TURNSPEED -75
 #define DRIVESPEED -50
-#define ANGLESPECIAL 40
+#define ANGLESPECIAL 20
 #else
 #define TURNSPEED 75
 #define DRIVESPEED 50
-#define ANGLESPECIAL 20
+#define ANGLESPECIAL 15
 #endif
 
 //compensation for robots tendency to drift right
 #define COMP .99
 
 //line following constants
-#define LINEFOLLOWRATIO .5
+#define LINEFOLLOWRATIO 0.20
 #define WHITE 0
 #define BLACK 1
 #define BLUE 2
@@ -53,18 +54,21 @@
 #define B5 0x20 //stopper in output address
 
 //*******************************macros*********************************
+// enables beap during state transitions
 #ifdef AUDIO_DEBUG_ENABLED
 #define AUDIO_DEBUG(frequency, duration) PlayTone(frequency, duration)
 #else
 #define AUDIO_DEBUG(frequency, duration)
 #endif
 
+// enables emergency timeouts if a state takes longer than expected to finish
 #ifdef TIMEOUTS_ENABLED
 #define TIMEOUT(time) time1[T1] > time
 #else
 #define TIMEOUT(time) time1[T1] > 100000000
 #endif
 
+//Change turn direction in state PARK_TURN2 depending on whether going front or back
 #ifdef __BACKWARDSTART__
 #define DRIVESPECIAL(left, right) drive(-left, -right)
 #else

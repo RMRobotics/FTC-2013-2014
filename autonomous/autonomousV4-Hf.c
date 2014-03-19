@@ -22,8 +22,7 @@
 #include "../headers/drivers.h"
 #include "../headers/smux_sensor_definitions.h"
 #include "../headers/constants.h"
-#include "../headers/autonomousStruct.h"
-#include "../headers/functionPrototypes.h"
+#include "../headers/RobotState.h"
 #include "../headers/autonomousFunctions.h"
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -38,16 +37,17 @@ task main() {
 	RobotState state;
 	initialize(&state);
 	short leftSpeed, rightSpeed;
-	short prevState = 999;
+	short prevState = INITIALSTATE;
 	bool distLess50;
 	bool irDetected = false;
+	bool sawRed = false;
 	bool goBackward = false;
 	float startAngle = 0;
 
 	//waitForStart();
 	wait1Msec(state.delayTime*1000);
-	DRIVESPECIAL(25, 25);
-	wait1Msec(1000);
+	DRIVESPECIAL(50, 50);
+	wait1Msec(350);
 	while(true){
 		//if state changes: stop motors, play tone, reset timers, gyro and lights
 		if (prevState != state.currentState){
@@ -66,16 +66,23 @@ task main() {
 
 		if(state.currentState == FINDLINE_TURN){
 			drive(0, TURNSPEED);
-			if(abs(state.degrees) >= 15){
-				state.currentState = FINDLINE_DRIVE;
+			if(state.color2 == RED || state.color2 == BLUE){
+				sawRed = true;
 			}
+			if (sawRed && state.color2 == BLACK){
+				state.currentState = LINEFOLLOW;
+			}
+			if(abs(state.degrees) > 10){
+				state.currentState = LINEFOLLOW;
+			}
+		/* state FINDLINE_DRIVE seems unnecessary
 		} else if (state.currentState == FINDLINE_DRIVE) {
 			drive(DRIVESPEED, DRIVESPEED*.95);
 			if (state.irDir == 5 && irDetected == false) {
 				state.currentState = SCOREBLOCK;
 			} else if(state.color2 == RED || state.color2 == BLUE){
 				state.currentState = LINEFOLLOW;
-			}
+			} */
 		} else if (state.currentState == LINEFOLLOW) {
 			if (state.dist < 50) {
 				distLess50 = true;
@@ -126,7 +133,7 @@ task main() {
 		} else if (state.currentState == PARK_TURN2) {
 			DRIVESPECIAL(-TURNSPEED, TURNSPEED);
 			if(abs(state.degrees) >= 35){
-				state.currentState = HARVEST;
+				state.currentState = PARK_DRIVE2; //skip state HARVEST
 			}
 		} else if (state.currentState == HARVEST) {
 			motor[harvester] = 100;
@@ -141,8 +148,8 @@ task main() {
 			}
 		} else if (state.currentState == PARK_DRIVE2) {
 			DRIVESPECIAL(-2*DRIVESPEED, -2*DRIVESPEED);
-			if(state.dist < 75  && time1[T1] >= 500){
-				wait1Msec(700);
+			if(abs(state.z_accel) > 30 && time1[T1] >= 500){
+				wait1Msec(1000);
 				state.currentState = END;
 			}
 		}

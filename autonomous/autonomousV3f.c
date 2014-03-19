@@ -22,8 +22,7 @@
 #include "../headers/drivers.h"
 #include "../headers/smux_sensor_definitions.h"
 #include "../headers/constants.h"
-#include "../headers/autonomousStruct.h"
-#include "../headers/functionPrototypes.h"
+#include "../headers/RobotState.h"
 #include "../headers/autonomousFunctions.h"
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -38,24 +37,26 @@ task main() {
 	RobotState state;
 	initialize(&state);
 	short leftSpeed, rightSpeed;
-	short prevState = 999;
+	short prevState = INITIALSTATE;
 	bool distLess50;
 	bool irDetected = false;
+	bool sawRed = false;
 	float startAngle = 0;
 
 	//waitForStart();
 	wait1Msec(state.delayTime*1000);
-	DRIVESPECIAL(25, 25);
-	wait1Msec(1000);
+	DRIVESPECIAL(50, 50); //TODO: Change to a more sensible name
+	wait1Msec(350);
 	while(true){
 		//if state changes: stop motors, play tone, reset timers, gyro and lights
 		if (prevState != state.currentState){
 			stopMotors();
-			AUDIO_DEBUG(500, 10);
+			AUDIO_DEBUG(500, 15);
 			time1[T1] = 0;
 			resetGyroAccel(&state);
 			LEDController(0x00);
 			leftSpeed = 0;
+			rightSpeed = 0;
 			distLess50 = false;
 			startAngle = state.degrees;
 		}
@@ -65,26 +66,34 @@ task main() {
 
 		if(state.currentState == FINDLINE_TURN){
 			drive(0, TURNSPEED);
-			if(abs(state.degrees) >= 15){
-				state.currentState = FINDLINE_DRIVE;
+			if(state.color2 == RED || state.color2 == BLUE){
+				sawRed = true;
 			}
+			if (sawRed && state.color2 == BLACK){
+				state.currentState = LINEFOLLOW;
+			}
+			if(abs(state.degrees) > 10){
+				state.currentState = LINEFOLLOW;
+			}
+		/* state FINDLINE_DRIVE seems unnecessary
 		} else if (state.currentState == FINDLINE_DRIVE) {
 			drive(DRIVESPEED, DRIVESPEED*.95);
 			if (state.irDir == 5 && irDetected == false) {
 				state.currentState = SCOREBLOCK;
 			} else if(state.color2 == RED || state.color2 == BLUE){
 				state.currentState = LINEFOLLOW;
-			}
+			} */
 		} else if (state.currentState == LINEFOLLOW) {
 			if (state.dist < 50) {
 				distLess50 = true;
 			}
 			if (state.irDir == 5 && irDetected == false) {
 				state.currentState = SCOREBLOCK;
-			} else if (state.dist > 50 && distLess50) {
+			} else if (state.dist > 75 && distLess50 && time1[T1] > 250) {
 				state.currentState = PARK_TURN1;
 			} else {
 				if (state.color2 == RED || state.color2 == BLUE) {
+					PlayTone(700, 10);
 					leftSpeed = DRIVESPEED*LINEFOLLOWRATIO;
 					rightSpeed = DRIVESPEED;
 				} else {
@@ -100,24 +109,25 @@ task main() {
 			state.currentState = LINEFOLLOW;
 		} else if (state.currentState == PARK_TURN1) {
 			drive(TURNSPEED, -TURNSPEED);
-			if(abs(state.degrees) >= 20){
+			if(abs(state.degrees) >= 10){
 				state.currentState = PARK_DRIVE1;
 			}
 		} else if (state.currentState == PARK_DRIVE1) {
 			drive(DRIVESPEED, DRIVESPEED);
-			if((state.color2 == RED || state.color2 == BLUE) && time1[T1] >= 300){
+			if((state.color2 == RED || state.color2 == BLUE) && time1[T1] >= 1000){
 				state.currentState = PARK_TURN2;
 			}
 		} else if (state.currentState == PARK_TURN2) {
 			motor[harvester] = 100;
 			DRIVESPECIAL(-TURNSPEED, TURNSPEED);
 			if(abs(state.degrees) >= ANGLESPECIAL){
-				state.currentState = HARVEST;
+				state.currentState = PARK_DRIVE2; //Skip state HARVEST
 			}
 		} else if (state.currentState == HARVEST) {
 			motor[harvester] = 100;
-			DRIVESPECIAL(2*DRIVESPEED, 2*DRIVESPEED);
-			if (time1[T1] >= 500){
+			if (time1[T1] < 750) {
+				DRIVESPECIAL(2*DRIVESPEED, 2*DRIVESPEED);
+			} else {
 				leftSpeed = startAngle/abs(startAngle)*TURNSPEED;
 				rightSpeed = -startAngle/abs(startAngle)*TURNSPEED;
 				drive(leftSpeed, rightSpeed);
@@ -127,8 +137,8 @@ task main() {
 			}
 		} else if (state.currentState == PARK_DRIVE2) {
 			DRIVESPECIAL(-2*DRIVESPEED, -2*DRIVESPEED);
-			if(state.dist < 75  && time1[T1] >= 2500){
-				wait1Msec(700);
+			if(abs(state.x_accel) > 30 && time1[T1] >= 2500){
+				wait1Msec(1000);
 				state.currentState = END;
 			}
 		} else if (state.currentState == END){
