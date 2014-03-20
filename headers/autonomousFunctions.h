@@ -83,7 +83,7 @@ void getSensors(RobotState *state){
   case 9:     state->color2 = RED;       break;
   case 17:    state->color2 = WHITE;     break;
   default:
-  case 12:    state->color2 = BLACK;
+  case 13:    state->color2 = BLACK;
   }
   switch (HTCS2readColor(color)) {
   case 4:
@@ -91,7 +91,7 @@ void getSensors(RobotState *state){
   case 9:     state->color = RED;       break;
   case 17:    state->color = WHITE;     break;
   default:
-  case 12:    state->color = BLACK;
+  case 13:    state->color = BLACK;
 	}
 	//*********************************************************
 
@@ -102,7 +102,7 @@ void getSensors(RobotState *state){
 
 void blockScorer(){
 	drive(DRIVESPEED, DRIVESPEED);
-	wait1Msec(150);
+	WAITSPECIAL();
 	stopMotors();
 	servo[elbow] = ELBOWOUT;
 	wait1Msec(500);

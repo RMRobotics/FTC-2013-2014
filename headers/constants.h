@@ -20,7 +20,7 @@
 #ifdef __BACKWARDSTART__
 #define TURNSPEED -75
 #define DRIVESPEED -50
-#define ANGLESPECIAL 20
+#define ANGLESPECIAL 25
 #else
 #define TURNSPEED 75
 #define DRIVESPEED 50
@@ -70,8 +70,12 @@
 
 //Change turn direction in state PARK_TURN2 depending on whether going front or back
 #ifdef __BACKWARDSTART__
+#define INITIALDRIVE()
 #define DRIVESPECIAL(left, right) drive(-left, -right)
+#define WAITSPECIAL() wait1Msec(200)
 #else
+#define INITIALDRIVE() drive(50, 50); wait1Msec(275)
 #define DRIVESPECIAL(left, right) drive(left, right)
+#define WAITSPECIAL() wait1Msec(150)
 #endif
 //**********************************************************************

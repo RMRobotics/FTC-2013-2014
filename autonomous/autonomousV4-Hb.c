@@ -40,14 +40,13 @@ task main() {
 	short prevState = INITIALSTATE;
 	bool distLess50;
 	bool irDetected = false;
-	bool sawRed = false;
+	bool sawRedBlue = false;
 	bool goBackward = false;
 	float startAngle = 0;
 
 	//waitForStart();
 	wait1Msec(state.delayTime*1000);
-	DRIVESPECIAL(50, 50);
-	wait1Msec(350);
+	INITIALDRIVE();
 	while(true){
 		//if state changes: stop motors, play tone, reset timers, gyro and lights
 		if (prevState != state.currentState){
@@ -67,9 +66,9 @@ task main() {
 		if(state.currentState == FINDLINE_TURN){
 			drive(0, TURNSPEED);
 			if(state.color2 == RED || state.color2 == BLUE){
-				sawRed = true;
+				sawRedBlue = true;
 			}
-			if (sawRed && state.color2 == BLACK){
+			if (sawRedBlue && state.color2 == BLACK){
 				state.currentState = LINEFOLLOW;
 			}
 			if(abs(state.degrees) > 10){
@@ -89,7 +88,7 @@ task main() {
 			}
 			if (state.irDir == 5 && irDetected == false) {
 				state.currentState = SCOREBLOCK;
-			} else if (state.dist > 50 && distLess50) {
+			} else if (state.dist > 50 && distLess50 && irDetected == true) {
 				state.currentState = GOTOEND;
 			} else if (goBackward){
 				if (state.color == RED || state.color == BLUE) {
@@ -122,17 +121,17 @@ task main() {
 			}
 		} else if (state.currentState == PARK_TURN1) {
 			drive(-TURNSPEED, TURNSPEED);
-			if(abs(state.degrees) >= 30){
+			if(abs(state.degrees) >= 15){
 				state.currentState = PARK_DRIVE1;
 			}
 		} else if (state.currentState == PARK_DRIVE1) {
 			drive(-DRIVESPEED, -DRIVESPEED);
-			if(state.color2 == WHITE){
+			if(state.color == RED || state.color == BLUE){
 				state.currentState = PARK_TURN2;
 			}
 		} else if (state.currentState == PARK_TURN2) {
 			DRIVESPECIAL(-TURNSPEED, TURNSPEED);
-			if(abs(state.degrees) >= 35){
+			if(abs(state.degrees) >= 22.5){
 				state.currentState = PARK_DRIVE2; //skip state HARVEST
 			}
 		} else if (state.currentState == HARVEST) {
@@ -148,8 +147,8 @@ task main() {
 			}
 		} else if (state.currentState == PARK_DRIVE2) {
 			DRIVESPECIAL(-2*DRIVESPEED, -2*DRIVESPEED);
-			if(abs(state.z_accel) > 30 && time1[T1] >= 500){
-				wait1Msec(1000);
+			if(abs(state.x_accel) > 30){
+				wait1Msec(2500);
 				state.currentState = END;
 			}
 		}

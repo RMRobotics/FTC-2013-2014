@@ -40,13 +40,13 @@ task main() {
 	short prevState = INITIALSTATE;
 	bool distLess50;
 	bool irDetected = false;
-	bool sawRed = false;
+	bool sawRedBlue = false;
+	bool sawRedBlue2 = false;
 	float startAngle = 0;
 
+	INITIALDRIVE();
 	//waitForStart();
 	wait1Msec(state.delayTime*1000);
-	DRIVESPECIAL(50, 50); //TODO: Change to a more sensible name
-	wait1Msec(350);
 	while(true){
 		//if state changes: stop motors, play tone, reset timers, gyro and lights
 		if (prevState != state.currentState){
@@ -67,9 +67,9 @@ task main() {
 		if(state.currentState == FINDLINE_TURN){
 			drive(0, TURNSPEED);
 			if(state.color2 == RED || state.color2 == BLUE){
-				sawRed = true;
+				sawRedBlue = true;
 			}
-			if (sawRed && state.color2 == BLACK){
+			if (sawRedBlue && state.color2 == BLACK){
 				state.currentState = LINEFOLLOW;
 			}
 			if(abs(state.degrees) > 10){
@@ -87,9 +87,12 @@ task main() {
 			if (state.dist < 50) {
 				distLess50 = true;
 			}
+			if (state.color == RED || state.color == BLUE) {
+				sawRedBlue2 = true;
+			}
 			if (state.irDir == 5 && irDetected == false) {
 				state.currentState = SCOREBLOCK;
-			} else if (state.dist > 75 && distLess50 && time1[T1] > 250) {
+			} else if (state.dist > 75 && distLess50 && sawRedBlue2) {
 				state.currentState = PARK_TURN1;
 			} else {
 				if (state.color2 == RED || state.color2 == BLUE) {
@@ -109,7 +112,7 @@ task main() {
 			state.currentState = LINEFOLLOW;
 		} else if (state.currentState == PARK_TURN1) {
 			drive(TURNSPEED, -TURNSPEED);
-			if(abs(state.degrees) >= 10){
+			if(abs(state.degrees) >= 12){
 				state.currentState = PARK_DRIVE1;
 			}
 		} else if (state.currentState == PARK_DRIVE1) {
@@ -137,8 +140,8 @@ task main() {
 			}
 		} else if (state.currentState == PARK_DRIVE2) {
 			DRIVESPECIAL(-2*DRIVESPEED, -2*DRIVESPEED);
-			if(abs(state.x_accel) > 30 && time1[T1] >= 2500){
-				wait1Msec(1000);
+			if(abs(state.x_accel) > 30){
+				wait1Msec(3000);
 				state.currentState = END;
 			}
 		} else if (state.currentState == END){
