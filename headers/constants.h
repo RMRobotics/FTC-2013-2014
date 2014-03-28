@@ -14,13 +14,14 @@
 #define PARK_DRIVE2 8
 #define END 9
 #define HARVEST 10
+#define CHECKEND 11
 #define INITIALSTATE 999
 
 //Drive and turn speeds
 #ifdef __BACKWARDSTART__
 #define TURNSPEED -75
 #define DRIVESPEED -50
-#define ANGLESPECIAL 25
+#define ANGLESPECIAL 30
 #else
 #define TURNSPEED 75
 #define DRIVESPEED 50
@@ -45,7 +46,7 @@
 #define WRISTIN 255
 #define WRISTOUT 50
 #define ELBOWIN 0
-#define ELBOWOUT 115
+#define ELBOWOUT 120
 
 //LEDBitmask addres definitions
 #define B2 0x04 //IR detected output address
@@ -72,10 +73,10 @@
 #ifdef __BACKWARDSTART__
 #define INITIALDRIVE()
 #define DRIVESPECIAL(left, right) drive(-left, -right)
-#define WAITSPECIAL() wait1Msec(200)
+#define WAITSPECIAL() wait1Msec(100)
 #else
 #define INITIALDRIVE() drive(50, 50); wait1Msec(275)
 #define DRIVESPECIAL(left, right) drive(left, right)
-#define WAITSPECIAL() wait1Msec(150)
+#define WAITSPECIAL() wait1Msec(0)
 #endif
 //**********************************************************************

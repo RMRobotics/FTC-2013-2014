@@ -43,6 +43,8 @@ typedef struct {
 	int stopperPos;
 	int wristPos;
 	int elbowPos;
+
+	bool robotWave; //make the robot wave :)
 } teleopState;
 
 int joyPosToSpeedTable[129];
@@ -66,6 +68,7 @@ void initialize(teleopState *state) {
 	updateRobot(state);
 	stopRobot();
 	time1[T1] = 0;
+	//time1[T2] = 0;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -99,16 +102,16 @@ void initialize(teleopState *state) {
 //     Left Joystick:................Left tread speed (analog control)
 //     Right Joystick:...............Right tread speed (analog control)
 //     X/1:..........................Flag servo in
-//     A/2:..........................Flag servo out
+//     A/2:..........................
 //     B/3:..........................Give joystick 2 drive control
-//     Y/4:..........................
+//     Y/4:..........................Flag servo out
 //     Left Bumper/5:................Harvester fast
 //     Left Trigger/7:..,............Harvester slow
 //     Right Bumper/6:...............Harvester reverse
 //     Right Trigger/8:..............Flag turner
 //     Tophat/D-pad
 //       Up/0:.......................
-//       Down/4:.....................
+//       Down/4:.....................Robot waving
 //       Left/6:.....................Stopper out
 //       Right/2:....................Stopper in
 //   Controller 2
@@ -196,7 +199,9 @@ void updateJoystickInput(teleopState *state) {
 		state->harvesterSpeed = 50;
 	} else if (joyButton(state->joy.joy1_Buttons, 6)) {
 		state->harvesterSpeed = -100;
-	}	else {
+	//}	else if (time1[T2] > 100 && time1[T2] < 700) { //turn the harvester a bit when stopper is drawn out
+	//	state->harvesterSpeed = 100;
+	} else {
 		state->harvesterSpeed = 0;
 	}
 
@@ -236,6 +241,7 @@ void updateJoystickInput(teleopState *state) {
 		state->stopperPos = STOPPERIN;
 	} else if (state->joy.joy1_TopHat == 6) {
 		state->stopperPos = STOPPEROUT;
+		//time1[T2] = 0;
 	}
 	if (state->stopperPos == STOPPERIN){
 		state->LEDBitmask = state->LEDBitmask | B5;
@@ -253,6 +259,29 @@ void updateJoystickInput(teleopState *state) {
 		state->elbowPos = ELBOWIN;
 	} else if (joyButton(state->joy.joy2_Buttons, 4)) {
 		state->elbowPos = ELBOWOUT;
+	}
+
+	//robot waving
+	if (state->joy.joy1_TopHat == 0) {
+		state->robotWave = true;
+		time1[T3] = 0;
+	} else if (state->joy.joy1_TopHat == 4) {
+		state->robotWave = false;
+		state->wristPos = WRISTIN;
+	}
+	if (state->robotWave) {
+		if (time1[T3] < 250) {
+			state->wristPos = WRISTOUT;
+		} else if (time1[T3] < 500) {
+			state->wristPos = 150;
+		} else {
+			time1[T3] = 0;
+		}
+	}
+
+	//robot horn
+	if (joyButton(state->joy.joy1_Buttons, 2)) {
+		PlayTone(700, 8);
 	}
 }
 

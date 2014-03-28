@@ -50,12 +50,15 @@ task main() {
 	while(true){
 		//if state changes: stop motors, play tone, reset timers, gyro and lights
 		if (prevState != state.currentState){
-			stopMotors();
+			if (prevState != PARK_DRIVE2 && prevState != CHECKEND){
+				stopMotors();
+				leftSpeed = 0;
+				rightSpeed = 0;
+			}
 			AUDIO_DEBUG(500, 10);
 			time1[T1] = 0;
 			resetGyroAccel(&state);
 			LEDController(0x00);
-			leftSpeed = 0;
 			distLess50 = false;
 			startAngle = state.degrees;
 		}
@@ -147,10 +150,23 @@ task main() {
 			}
 		} else if (state.currentState == PARK_DRIVE2) {
 			DRIVESPECIAL(-2*DRIVESPEED, -2*DRIVESPEED);
-			if(abs(state.x_accel) > 30){
-				wait1Msec(2500);
-				state.currentState = END;
+			if(abs(state.x_accel) > 35 && state.x_accel < 100){
+				wait1Msec(20);
+				state.currentState = CHECKEND;
 			}
+		} else if (state.currentState == CHECKEND) {
+			if(abs(state.x_accel) > 35 && abs(state.x_accel) < 100){
+				state.currentState = END; //if it's > 30 after 1 sec of pushing, you're done
+			} else {
+				state.currentState = PARK_DRIVE2; //else you need to do more pushing
+			}
+		} else if (state.currentState == END){
+			DRIVESPECIAL(-2*DRIVESPEED, -2*DRIVESPEED);
+			if(time1[T1] >= 1000){
+				break;
+			}
+		} else {
+			break;
 		}
 	}
 }

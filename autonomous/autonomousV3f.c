@@ -50,13 +50,15 @@ task main() {
 	while(true){
 		//if state changes: stop motors, play tone, reset timers, gyro and lights
 		if (prevState != state.currentState){
-			stopMotors();
+			if (prevState != PARK_DRIVE2 && prevState != CHECKEND){
+				stopMotors();
+				leftSpeed = 0;
+				rightSpeed = 0;
+			}
 			AUDIO_DEBUG(500, 15);
 			time1[T1] = 0;
 			resetGyroAccel(&state);
 			LEDController(0x00);
-			leftSpeed = 0;
-			rightSpeed = 0;
 			distLess50 = false;
 			startAngle = state.degrees;
 		}
@@ -121,7 +123,6 @@ task main() {
 				state.currentState = PARK_TURN2;
 			}
 		} else if (state.currentState == PARK_TURN2) {
-			motor[harvester] = 100;
 			DRIVESPECIAL(-TURNSPEED, TURNSPEED);
 			if(abs(state.degrees) >= ANGLESPECIAL){
 				state.currentState = PARK_DRIVE2; //Skip state HARVEST
@@ -140,12 +141,21 @@ task main() {
 			}
 		} else if (state.currentState == PARK_DRIVE2) {
 			DRIVESPECIAL(-2*DRIVESPEED, -2*DRIVESPEED);
-			if(abs(state.x_accel) > 30){
-				wait1Msec(3000);
-				state.currentState = END;
+			if(abs(state.x_accel) > 35 && state.x_accel < 45){
+				wait1Msec(20);
+				state.currentState = CHECKEND;
+			}
+		} else if (state.currentState == CHECKEND) {
+			if(abs(state.x_accel) > 35 && abs(state.x_accel) < 45){
+				state.currentState = END; //if it's still > 30 100ms after trigger
+			} else {
+				state.currentState = PARK_DRIVE2; //else you need to do more pushing
 			}
 		} else if (state.currentState == END){
-			break;
+			DRIVESPECIAL(-2*DRIVESPEED, -2*DRIVESPEED);
+			if(time1[T1] >= 1000){
+				break;
+			}
 		} else { //if error occured
 			break;
 		}

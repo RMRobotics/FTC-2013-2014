@@ -80,18 +80,18 @@ void getSensors(RobotState *state){
 	switch (HTCS2readColor(color2)) {
   case 4:
   case 2:     state->color2 = BLUE;      break;
-  case 9:     state->color2 = RED;       break;
+  case 8:     state->color2 = RED;       break;
   case 17:    state->color2 = WHITE;     break;
   default:
-  case 13:    state->color2 = BLACK;
+  case 14:    state->color2 = BLACK;
   }
   switch (HTCS2readColor(color)) {
   case 4:
   case 2:     state->color = BLUE;      break;
-  case 9:     state->color = RED;       break;
+  case 8:     state->color = RED;       break;
   case 17:    state->color = WHITE;     break;
   default:
-  case 13:    state->color = BLACK;
+  case 14:    state->color = BLACK;
 	}
 	//*********************************************************
 
