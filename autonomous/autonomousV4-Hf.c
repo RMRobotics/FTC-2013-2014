@@ -43,6 +43,7 @@ task main() {
 	bool sawRedBlue = false;
 	bool goBackward = false;
 	float startAngle = 0;
+	int numTimeAccelTriggered = 0;
 
 	//waitForStart();
 	wait1Msec(state.delayTime*1000);
@@ -150,16 +151,15 @@ task main() {
 			}
 		} else if (state.currentState == PARK_DRIVE2) {
 			DRIVESPECIAL(-2*DRIVESPEED, -2*DRIVESPEED);
-			if(abs(state.x_accel) > 35 && state.x_accel < 100){
-				wait1Msec(20);
-				state.currentState = CHECKEND;
-			}
-		} else if (state.currentState == CHECKEND) {
-			if(abs(state.x_accel) > 35 && abs(state.x_accel) < 100){
-				state.currentState = END; //if it's > 30 after 1 sec of pushing, you're done
+			if(abs(state.x_accel) > 35){
+				numTimeAccelTriggered++;
 			} else {
-				state.currentState = PARK_DRIVE2; //else you need to do more pushing
+				numTimeAccelTriggered = 0;
 			}
+			if (numTimeAccelTriggered >= 3) {
+				state.currentState = END;
+			}
+			wait1Msec(20);
 		} else if (state.currentState == END){
 			DRIVESPECIAL(-2*DRIVESPEED, -2*DRIVESPEED);
 			if(time1[T1] >= 1000){
