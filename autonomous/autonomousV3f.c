@@ -142,7 +142,7 @@ task main() {
 			}
 		} else if (state.currentState == PARK_DRIVE2) {
 			DRIVESPECIAL(-2*DRIVESPEED, -2*DRIVESPEED);
-			if(abs(state.x_accel) > 35){
+			if(abs(state.x_accel) > 35 && time1[T1] > 300){
 				numTimeAccelTriggered++;
 			} else {
 				numTimeAccelTriggered = 0;

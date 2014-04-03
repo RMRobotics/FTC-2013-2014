@@ -1,5 +1,6 @@
 //1st Multiplexer Sensors
 const tMUXSensor HTACCEL = msensor_S2_2;
+const tMUXSensor light = msensor_S2_3;
 
 //2nd Multiplexer Sensors
 const tMUXSensor HTIRS = msensor_S4_1;

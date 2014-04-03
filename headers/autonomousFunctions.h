@@ -15,6 +15,8 @@ void initialize(RobotState *state){
 	// Calibrate the gyro, make sure you hold the sensor still
 	HTGYROstartCal(HTGYRO);
 
+	disableDiagnosticsDisplay();
+
 	setDelayTime(state);
 }
 

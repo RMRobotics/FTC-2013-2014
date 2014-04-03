@@ -27,22 +27,22 @@
 typedef struct {
 	TJoystick joy;
 
-	ubyte LEDBitmask;
+	short LEDindicatorArray[9];
 
 	int x_accel;
 	int y_accel;
 	int z_accel;
 
-	int leftSpeed;
-	int rightSpeed;
-	int harvesterSpeed;
-	int leftHangSpeed;
-	int rightHangSpeed;
-	int flagSpeed;
+	short leftSpeed;
+	short rightSpeed;
+	short harvesterSpeed;
+	short leftHangSpeed;
+	short rightHangSpeed;
+	short flagSpeed;
 	float flagServoPos;
-	int stopperPos;
-	int wristPos;
-	int elbowPos;
+	short stopperPos;
+	short wristPos;
+	short elbowPos;
 
 	bool robotWave; //make the robot wave :)
 } teleopState;
@@ -57,19 +57,77 @@ void updateRobot(teleopState *state);
 void stopRobot();
 void showDiagnostics(teleopState *state);
 int joyButton(short bitmask, int button);
-void LEDController(ubyte LEDBitmask);
+void LEDController(teleopState *state);
 
 void initialize(teleopState *state) {
-	HTSPBsetupIO(HTSPB, 0xFF);
+	HTSPBsetupIO(HTSPB, 0x01);
 	memset(state, 0, sizeof(state));
 	state->wristPos = WRISTIN;
 	state->elbowPos = ELBOWIN;
 	state->stopperPos = STOPPEROUT;
+	state->robotWave = false;
 	updateRobot(state);
 	stopRobot();
 	time1[T1] = 0;
 	//time1[T2] = 0;
+	disableDiagnosticsDisplay();
 }
+
+void LEDController(teleopState *state) {
+	int batteryLevel = (externalBatteryAvg - 1200)/10;
+	int nxtBatteryLevel = nAvgBatteryLevel/100;
+	if (externalBatteryAvg < 0) {
+		batteryLevel = 0;
+	} else if (batteryLevel <= 1) {
+		batteryLevel = 1;
+	} else if (batteryLevel >= 20) {
+		batteryLevel = 20;
+	}
+	if (HTSMUXreadPowerStatus(SMUX)) {
+		state->LEDindicatorArray[2] = 1;
+	} else {
+		state->LEDindicatorArray[2] = 0;
+	}
+	if (HTSMUXreadPowerStatus(SMUX2)) {
+		state->LEDindicatorArray[3] = 1;
+	} else {
+		state->LEDindicatorArray[3] = 0;
+	}
+	state->LEDindicatorArray[0] = batteryLevel;
+	state->LEDindicatorArray[1] = nxtBatteryLevel;
+	HTSPBwriteIO(HTSPB, 0x01);
+	for (int messageID = 0; messageID <= 8; messageID ++) {
+		HTSPBwriteAnalog(HTSPB, HTSPB_DACO0, DAC_MODE_DCOUT, 1, messageID*50);
+		HTSPBwriteAnalog(HTSPB, HTSPB_DACO1, DAC_MODE_DCOUT, 1, state->LEDindicatorArray[messageID]*50);
+	}
+	HTSPBwriteIO(HTSPB, 0x00);
+
+	//*************************************************************
+
+	//string display = "id = ";
+	//string display2 = "val = ";
+	//string string3;
+	//string string4;
+
+	//for (int i = 0; i <= 8; i++){
+	//	for (int j = 0; j <=20; j++){
+	//		HTSPBwriteIO(HTSPB, 0x01);
+	//		HTSPBwriteAnalog(HTSPB, HTSPB_DACO0, DAC_MODE_DCOUT, 1, i*50);
+	//		HTSPBwriteAnalog(HTSPB, HTSPB_DACO1, DAC_MODE_DCOUT, 1, j*50);
+	//		string3 = i;
+	//		string4 = j;
+	//		strcat(display, string3);
+	//		strcat(display2, string4);
+	//		nxtDisplayTextLine(3, display);
+	//		nxtDisplayTextLine(4, display2);
+	//		wait1Msec(50);
+	//		HTSPBwriteIO(HTSPB, 0x00);
+	//		display = "id = ";
+	//		display2 = "val = ":
+	//	}
+	//}
+}
+
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -155,12 +213,12 @@ task main()
 	waitForStart();
 
 	while(true){
-		HTSPBsetupIO(HTSPB, 0xFF);
-		currentState.LEDBitmask = 0x00; //clear LEDBitmask
+		HTSPBsetupIO(HTSPB, 0x01);
 		updateJoystickInput(currentState);
 		updateSensorInput(currentState);
 		updateRobot(currentState);
 		showDiagnostics(currentState);
+		LEDController(currentState);
 	}
 }
 
@@ -195,14 +253,18 @@ void updateJoystickInput(teleopState *state) {
 
 	if (joyButton(state->joy.joy1_Buttons, 5)) {
 		state->harvesterSpeed = 100;
+		state->LEDindicatorArray[6] = 1;
 	} else if (joyButton(state->joy.joy1_Buttons, 7)) {
 		state->harvesterSpeed = 50;
+		state->LEDindicatorArray[6] = 2;
 	} else if (joyButton(state->joy.joy1_Buttons, 6)) {
 		state->harvesterSpeed = -100;
+		state->LEDindicatorArray[6] = 3;
 	//}	else if (time1[T2] > 100 && time1[T2] < 700) { //turn the harvester a bit when stopper is drawn out
 	//	state->harvesterSpeed = 100;
 	} else {
 		state->harvesterSpeed = 0;
+		state->LEDindicatorArray[6] = 0;
 	}
 
 	if (joyButton(state->joy.joy1_Buttons, 8)){
@@ -213,20 +275,24 @@ void updateJoystickInput(teleopState *state) {
 
 	if (joyButton(state->joy.joy2_Buttons, 7)) {
 		state->rightHangSpeed = 100;
-		state->LEDBitmask = state->LEDBitmask | B4;
+		state->LEDindicatorArray[4] = 1;
 	} else if (joyButton(state->joy.joy2_Buttons, 5)) {
 		state->rightHangSpeed = -100;
+		state->LEDindicatorArray[4] = 0;
 	} else {
 		state->rightHangSpeed = 0;
+		state->LEDindicatorArray[4] = 0;
 	}
 
 	if (joyButton(state->joy.joy2_Buttons, 8)) {
 		state->leftHangSpeed = 100;
-		state->LEDBitmask = state->LEDBitmask | B4;
+		state->LEDindicatorArray[4] = 1;
 	} else if (joyButton(state->joy.joy2_Buttons, 6)) {
 		state->leftHangSpeed = -100;
+		state->LEDindicatorArray[4] = 0;
 	} else {
 		state->leftHangSpeed = 0;
+		state->LEDindicatorArray[4] = 0;
 	}
 
 	//flag servo
@@ -244,7 +310,9 @@ void updateJoystickInput(teleopState *state) {
 		//time1[T2] = 0;
 	}
 	if (state->stopperPos == STOPPERIN){
-		state->LEDBitmask = state->LEDBitmask | B5;
+		state->LEDindicatorArray[5] = 1;
+	} else {
+		state->LEDindicatorArray[5] = 0;
 	}
 
 	//wrist servo
@@ -279,6 +347,9 @@ void updateJoystickInput(teleopState *state) {
 		} else {
 			time1[T3] = 0;
 		}
+		state->LEDindicatorArray[7] = 1;
+	} else {
+		state->LEDindicatorArray[7] = 0;
 	}
 
 	//robot horn
@@ -288,15 +359,14 @@ void updateJoystickInput(teleopState *state) {
 }
 
 void updateSensorInput(teleopState *state) {
-	int red, green, blue;
-	if (!HTCS2readRGB(color, red, green, blue)) {
-		//do nothing
-	}
-	if (red - blue > 10 && green - blue > 10) {
-		if (time1[T1] > COLORWAITTIME)
-			state->LEDBitmask = state->LEDBitmask | B3;
+	int lightValue = LSvalNorm(light);
+	if (lightValue > 50) {
+		if (time1[T1] > COLORWAITTIME) {
+			state->LEDindicatorArray[8] = 1;
+		}
 	} else {
 		time1[T1] = 0;
+		state->LEDindicatorArray[8] = 0;
 	}
 	HTACreadAllAxes(HTACCEL, state->x_accel, state->y_accel, state->z_accel); //
 }
@@ -305,14 +375,6 @@ int joyButton(short bitmask, int button)
 {
 	//return 1 or 0 based on whether button in bitmask is pressed or not
 	return bitmask & (1 << (button - 1));
-}
-
-void LEDController(ubyte LEDBitmask) {
-	//B2 (0x04): IR detected output address (only use in autonomous)
-	//B3 (0x08): Block Detected output address
-	//B4 (0x0F): Robot Lifting output address
-	//B5 (0x20): Stopper In output address
-	HTSPBwriteIO(HTSPB, LEDBitmask);
 }
 
 void updateRobot(teleopState *state) {
@@ -326,7 +388,7 @@ void updateRobot(teleopState *state) {
 	servo[wrist]=state->wristPos;
 	servo[elbow]=state->elbowPos;
 	servo[stopper]=state->stopperPos;
-	LEDController(state->LEDBitmask);
+	//LEDController(state->LEDBitmask);
 }
 
 void stopRobot() {
@@ -341,28 +403,32 @@ void stopRobot() {
 void showDiagnostics(teleopState *state) {
 	//create label
 	string batteryLevel = "power = ";
+	string nxtBatteryLevel = "nxtPower = ";
 	string displayXAccel = "x-accel = ";
 	string displayYAccel = "y-accel = ";
 	string displayZAccel = "z-accel = ";
 
 	//store variable in a string
 	string string1 = externalBatteryAvg;
-	string string2 = state->x_accel;
-	string string3 = state->y_accel;
-	string string4 = state->z_accel;
+	string string2 = nAvgBatteryLevel;
+	string string3 = state->x_accel;
+	string string4 = state->y_accel;
+	string string5 = state->z_accel;
 
 	//concat variable with label
 	strcat(batteryLevel, string1);
-	strcat(displayXAccel, string2);
-	strcat(displayYAccel, string3);
-	strcat(displayZAccel, string4);
+	strcat(nxtBatteryLevel, string2);
+	strcat(displayXAccel, string3);
+	strcat(displayYAccel, string4);
+	strcat(displayZAccel, string5);
 
 	eraseDisplay();
 
 	//display label and value
 	nxtDisplayTextLine(1, "Teleop");
 	nxtDisplayTextLine(2, batteryLevel);
-	nxtDisplayTextLine(3, displayXAccel);
-	nxtDisplayTextLine(4, displayYAccel);
-	nxtDisplayTextLine(5, displayZAccel);
+	nxtDisplayTextLine(3, nxtBatteryLevel);
+	nxtDisplayTextLine(4, displayXAccel);
+	nxtDisplayTextLine(5, displayYAccel);
+	nxtDisplayTextLine(6, displayZAccel);
 }
