@@ -98,8 +98,7 @@ void LEDController(teleopState *state) {
 	HTSPBwriteIO(HTSPB, 0x01);
 	for (int messageID = 0; messageID <= 8; messageID ++) {
 		HTSPBwriteAnalog(HTSPB, HTSPB_DACO0, DAC_MODE_DCOUT, 1, messageID*50);
-		HTSPBwriteAnalog(HTSPB, HTSPB_DACO1, DAC_MODE_DCOUT, 1, state->LEDin
-		dicatorArray[messageID]*50);
+		HTSPBwriteAnalog(HTSPB, HTSPB_DACO1, DAC_MODE_DCOUT, 1, state->LEDindicatorArray[messageID]*50);
 	}
 	HTSPBwriteIO(HTSPB, 0x00);
 

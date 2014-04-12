@@ -8,8 +8,9 @@ void initialize(RobotState *state){
 	memset(state, 0, sizeof(state));
 	motor[leftTread] = 0;
 	motor[rightTread] = 0;
-	servo[wrist] = WRISTIN;
-	servo[elbow] = ELBOWIN;
+	servo[pawServo] = PAWSERVODOWN;
+	servo[wrist] = WRISTOUT;
+	servo[elbow] = ELBOWOUT;
 	servo[stopper] = STOPPERIN;
 
 	// Calibrate the gyro, make sure you hold the sensor still
@@ -18,6 +19,10 @@ void initialize(RobotState *state){
 	disableDiagnosticsDisplay();
 
 	setDelayTime(state);
+
+	wait1Msec(5000);
+	servo[wrist] = 255;
+	servo[elbow] = 10;
 }
 
 void setDelayTime(RobotState *state) {
@@ -27,9 +32,9 @@ void setDelayTime(RobotState *state) {
 		short nxtButtonChanged = oldButton ^ nNxtButtonPressed;
 		oldButton = nNxtButtonPressed;
 		if (nNxtButtonPressed == 1 && nxtButtonChanged) {
-			state->delayTime += 1;
+			state->delayTime ++;
 		} else if (nNxtButtonPressed == 2 && nxtButtonChanged) {
-			state->delayTime -= 1;
+			state->delayTime --;
 		}
 		showDiagnostics(state);
 	}
@@ -79,22 +84,28 @@ void getSensors(RobotState *state){
 	//*********************************************************
 
 	//*********************Color Sensors***********************
-	switch (HTCS2readColor(color2)) {
-  case 4:
-  case 2:     state->color2 = BLUE;      break;
-  case 8:     state->color2 = RED;       break;
-  case 17:    state->color2 = WHITE;     break;
-  default:
-  case 14:    state->color2 = BLACK;
-  }
-  switch (HTCS2readColor(color)) {
-  case 4:
-  case 2:     state->color = BLUE;      break;
-  case 8:     state->color = RED;       break;
-  case 17:    state->color = WHITE;     break;
-  default:
-  case 14:    state->color = BLACK;
-	}
+	if (HTCS2readColor(color2) >= 2 && HTCS2readColor(color2) <= 3) {
+		state->color2 = BLUE;
+	} else if (HTCS2readColor(color2) >= 4 && HTCS2readColor(color2) <= 5) {
+		state->color2 = GREEN;
+	} else if (HTCS2readColor(color2) >= 7 && HTCS2readColor(color2) <= 9) {
+		state->color2 = RED;
+	} else if (HTCS2readColor(color2) == 17) {
+		state->color2 = WHITE;
+	} else {
+		state->color2 = BLACK;
+  	}
+	if (HTCS2readColor(color) >= 2 && HTCS2readColor(color) <= 3) {
+		state->color = BLUE;
+	} else if (HTCS2readColor(color) >= 4 && HTCS2readColor(color) <= 5) {
+		state->color = GREEN;
+	} else if (HTCS2readColor(color) >= 7 && HTCS2readColor(color) <= 9) {
+		state->color = RED;
+	} else if (HTCS2readColor(color) == 17) {
+		state->color = WHITE;
+	} else {
+		state->color = BLACK;
+  	}
 	//*********************************************************
 
 	//*****************Show Debugging Window*******************
