@@ -3,20 +3,21 @@
 //#define TIMEOUTS_ENABLED
 
 //state machine constants
-#define FINDLINE_DRIVE 0
-#define FINDLINE_TURN 1
-#define FINDLINE_DRIVE2 2
-#define LINEFOLLOW 3
-#define SCOREBLOCK 4
-#define GOTOEND 5
-#define PARK_TURN1 6
-#define PARK_DRIVE1 7
-#define PARK_TURN2 8
-#define PARK_DRIVE2 9
-#define END 10
-#define HARVEST 11
-#define CHECKEND 12
-#define INITIALSTATE 999
+#define FINDLINE_DRIVE 0   // Drive until you hit the corner of the low goal
+#define FINDLINE_TURN 1    // turn until you're on the outside of the low goal tape line or until you make a 45 degree turn
+#define FINDLINE_DRIVE2 2  // if you missed the tape line and made the 45 degree turn,
+                           // drive forward but lean slightly to the right to try to catch the line at a shallow enough angle to line follow
+#define LINEFOLLOW 3       // line follow
+#define SCOREBLOCK 4       // score the block
+#define GOTOEND 5          // only in H: move forward some more
+#define PARK_TURN1 6       // turn in toward the lines at the center of the field
+#define PARK_DRIVE1 7      // drive until you hit the lines at the center of the field
+#define PARK_TURN2 8       // turn to be parallel with the ramp wall again
+#define PARK_DRIVE2 9      // drive until accelerometer is triggered
+#define END 10             // end of program
+#define HARVEST 11         // harvest cubes during autonomous, not used
+#define CHECKEND 12        // check to see if accelerometer really is triggered, depreciated, not used
+#define INITIALSTATE 999   // not an actual physical state, used to initialize prevState variable
 
 //Drive and turn speeds
 #ifdef __BACKWARDSTART__
