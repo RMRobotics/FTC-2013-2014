@@ -9,7 +9,7 @@
 #pragma config(Motor,  mtr_S1_C4_1,     rightHang,     tmotorTetrix, openLoop, reversed)
 #pragma config(Motor,  mtr_S1_C4_2,     leftHang,      tmotorTetrix, openLoop, reversed)
 #pragma config(Servo,  srvo_S1_C2_1,    servo1,               tServoNone)
-#pragma config(Servo,  srvo_S1_C2_2,    servo2,               tServoNone)
+#pragma config(Servo,  srvo_S1_C2_2,    pawServo,             tServoNone)
 #pragma config(Servo,  srvo_S1_C2_3,    flagServo,            tServoNone)
 #pragma config(Servo,  srvo_S1_C2_4,    wrist,                tServoNone)
 #pragma config(Servo,  srvo_S1_C2_5,    elbow,                tServoNone)
