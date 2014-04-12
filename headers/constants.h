@@ -3,33 +3,34 @@
 //#define TIMEOUTS_ENABLED
 
 //state machine constants
-#define FINDLINE_TURN 0
-#define FINDLINE_DRIVE 1
-#define LINEFOLLOW 2
-#define SCOREBLOCK 3
-#define GOTOEND 4
-#define PARK_TURN1 5
-#define PARK_DRIVE1 6
-#define PARK_TURN2 7
-#define PARK_DRIVE2 8
-#define END 9
-#define HARVEST 10
-#define CHECKEND 11
+#define FINDLINE_DRIVE 0
+#define FINDLINE_TURN 1
+#define FINDLINE_DRIVE2 2
+#define LINEFOLLOW 3
+#define SCOREBLOCK 4
+#define GOTOEND 5
+#define PARK_TURN1 6
+#define PARK_DRIVE1 7
+#define PARK_TURN2 8
+#define PARK_DRIVE2 9
+#define END 10
+#define HARVEST 11
+#define CHECKEND 12
 #define INITIALSTATE 999
 
 //Drive and turn speeds
 #ifdef __BACKWARDSTART__
 #define TURNSPEED -75
-#define DRIVESPEED -50
-#define ANGLESPECIAL 30
+#define DRIVESPEED -100
+#define ANGLESPECIAL 15
 #else
 #define TURNSPEED 75
-#define DRIVESPEED 50
-#define ANGLESPECIAL 15
+#define DRIVESPEED 100
+#define ANGLESPECIAL 9
 #endif
 
 //compensation for robots tendency to drift right
-#define COMP .99
+#define COMP 1
 
 //line following constants
 #define LINEFOLLOWRATIO 0.20
@@ -37,16 +38,19 @@
 #define BLACK 1
 #define BLUE 2
 #define RED 3
+#define GREEN 4
 
 //servo positions
+#define PAWSERVODOWN 240
+#define PAWSERVOUP 128
 #define FLAGSERVOOUT 255
 #define FLAGSERVOIN 0
 #define STOPPERIN 255
 #define STOPPEROUT 0
-#define WRISTIN 255
+#define WRISTIN 245
 #define WRISTOUT 50
 #define ELBOWIN 0
-#define ELBOWOUT 120
+#define ELBOWOUT 140
 
 //LEDBitmask addres definitions
 #define B2 0x04 //IR detected output address
@@ -75,7 +79,7 @@
 #define DRIVESPECIAL(left, right) drive(-left, -right)
 #define WAITSPECIAL() wait1Msec(100)
 #else
-#define INITIALDRIVE() drive(50, 50); wait1Msec(275)
+#define INITIALDRIVE() drive(25, 25); wait1Msec(400)
 #define DRIVESPECIAL(left, right) drive(left, right)
 #define WAITSPECIAL() wait1Msec(0)
 #endif

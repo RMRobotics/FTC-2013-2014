@@ -9,7 +9,7 @@
 #pragma config(Motor,  mtr_S1_C4_1,     rightHang,     tmotorTetrix, openLoop)
 #pragma config(Motor,  mtr_S1_C4_2,     leftHang,      tmotorTetrix, openLoop, reversed)
 #pragma config(Servo,  srvo_S1_C2_1,    servo1,               tServoNone)
-#pragma config(Servo,  srvo_S1_C2_2,    servo2,               tServoNone)
+#pragma config(Servo,  srvo_S1_C2_2,    pawServo,             tServoNone)
 #pragma config(Servo,  srvo_S1_C2_3,    flagServo,            tServoNone)
 #pragma config(Servo,  srvo_S1_C2_4,    wrist,                tServoNone)
 #pragma config(Servo,  srvo_S1_C2_5,    elbow,                tServoNone)
@@ -45,9 +45,8 @@ task main() {
 	float startAngle = 0;
 	int numTimeAccelTriggered = 0;
 
-	//waitForStart();
+	waitForStart();
 	wait1Msec(state.delayTime*1000);
-	INITIALDRIVE();
 	while(true){
 		//if state changes: stop motors, play tone, reset timers, gyro and lights
 		if (prevState != state.currentState){
@@ -67,7 +66,12 @@ task main() {
 		getSensors(&state);
 		prevState = state.currentState;
 
-		if(state.currentState == FINDLINE_TURN){
+		if (state.currentState == FINDLINE_DRIVE){
+			drive(DRIVESPEED/4, DRIVESPEED/4);
+			if(state.color2 == RED || state.color2 == BLUE){
+				state.currentState = FINDLINE_TURN;
+			}
+		} else if(state.currentState == FINDLINE_TURN){
 			drive(0, TURNSPEED);
 			if(state.color2 == RED || state.color2 == BLUE){
 				sawRedBlue = true;
@@ -75,24 +79,23 @@ task main() {
 			if (sawRedBlue && state.color2 == BLACK){
 				state.currentState = LINEFOLLOW;
 			}
-			if(abs(state.degrees) > 10){
-				state.currentState = LINEFOLLOW;
+			if(abs(state.degrees) > 7){
+				state.currentState = FINDLINE_DRIVE2;
 			}
-		/* state FINDLINE_DRIVE seems unnecessary
-		} else if (state.currentState == FINDLINE_DRIVE) {
-			drive(DRIVESPEED, DRIVESPEED*.95);
+		} else if (state.currentState == FINDLINE_DRIVE2) {
+			drive(DRIVESPEED, DRIVESPEED*.99);
 			if (state.irDir == 5 && irDetected == false) {
 				state.currentState = SCOREBLOCK;
 			} else if(state.color2 == RED || state.color2 == BLUE){
 				state.currentState = LINEFOLLOW;
-			} */
+			}
 		} else if (state.currentState == LINEFOLLOW) {
 			if (state.dist < 50) {
 				distLess50 = true;
 			}
 			if (state.irDir == 5 && irDetected == false) {
 				state.currentState = SCOREBLOCK;
-			} else if (state.dist > 50 && distLess50 && irDetected == true) {
+			} else if (state.dist > 75 && distLess50 && irDetected == true){
 				state.currentState = GOTOEND;
 			} else if (goBackward){
 				if (state.color == RED || state.color == BLUE) {
@@ -130,7 +133,7 @@ task main() {
 			}
 		} else if (state.currentState == PARK_DRIVE1) {
 			drive(-DRIVESPEED, -DRIVESPEED);
-			if((state.color == RED || state.color == BLUE) && time1[T1] > 500){
+			if((state.color == RED || state.color == BLUE || state.color == GREEN) && time1[T1] > 500){
 				state.currentState = PARK_TURN2;
 			}
 		} else if (state.currentState == PARK_TURN2) {
@@ -162,7 +165,7 @@ task main() {
 			wait1Msec(20);
 		} else if (state.currentState == END){
 			DRIVESPECIAL(-2*DRIVESPEED, -2*DRIVESPEED);
-			if(time1[T1] >= 1000){
+			if(time1[T1] >= 300){
 				break;
 			}
 		} else {

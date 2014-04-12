@@ -9,7 +9,7 @@
 #pragma config(Motor,  mtr_S1_C4_1,     rightHang,     tmotorTetrix, openLoop)
 #pragma config(Motor,  mtr_S1_C4_2,     leftHang,      tmotorTetrix, openLoop, reversed)
 #pragma config(Servo,  srvo_S1_C2_1,    servo1,               tServoNone)
-#pragma config(Servo,  srvo_S1_C2_2,    servo2,               tServoNone)
+#pragma config(Servo,  srvo_S1_C2_2,    pawServo,             tServoNone)
 #pragma config(Servo,  srvo_S1_C2_3,    flagServo,            tServoNone)
 #pragma config(Servo,  srvo_S1_C2_4,    wrist,                tServoNone)
 #pragma config(Servo,  srvo_S1_C2_5,    elbow,                tServoNone)
@@ -40,6 +40,7 @@ typedef struct {
 	int rightHangSpeed;
 	int flagSpeed;
 	float flagServoPos;
+	int pawServoPos;
 	int stopperPos;
 	int wristPos;
 	int elbowPos;
@@ -62,9 +63,11 @@ void LEDController(ubyte LEDBitmask);
 void initialize(teleopState *state) {
 	HTSPBsetupIO(HTSPB, 0xFF);
 	memset(state, 0, sizeof(state));
-	state->wristPos = WRISTIN;
-	state->elbowPos = ELBOWIN;
+	state->pawServoPos = PAWSERVODOWN;
+	state->wristPos = 255;
+	state->elbowPos = 10;
 	state->stopperPos = STOPPEROUT;
+	state->robotWave = false;
 	updateRobot(state);
 	stopRobot();
 	time1[T1] = 0;
@@ -102,7 +105,7 @@ void initialize(teleopState *state) {
 //     Left Joystick:................Left tread speed (analog control)
 //     Right Joystick:...............Right tread speed (analog control)
 //     X/1:..........................Flag servo in
-//     A/2:..........................
+//     A/2:..........................Robot horn/beeper
 //     B/3:..........................Give joystick 2 drive control
 //     Y/4:..........................Flag servo out
 //     Left Bumper/5:................Harvester fast
@@ -110,24 +113,24 @@ void initialize(teleopState *state) {
 //     Right Bumper/6:...............Harvester reverse
 //     Right Trigger/8:..............Flag turner
 //     Tophat/D-pad
-//       Up/0:.......................
-//       Down/4:.....................Robot waving
+//       Up/0:.......................Robot waving on
+//       Down/4:.....................Robot waving off
 //       Left/6:.....................Stopper out
 //       Right/2:....................Stopper in
 //   Controller 2
 //     Left Joystick:................Left tread speed (analog control) (Controller 1, btn 3 must be active)
 //     Right Joystick:...............Right tread speed (analog control) (Controller 1, btn 3 must be active)
-//     X/1:..........................Wrist servo in
-//     A/2:..........................Wrist sero out
-//     B/3:..........................Elbow servo in
-//     Y/4:..........................Elvow servo out
+//     X/1:..........................
+//     A/2:..........................Eject autonomous block
+//     B/3:..........................
+//     Y/4:..........................
 //     Left Bumper/5:................Left Hanger Up
 //     Left Trigger/7:..,............Left Hanger Down
 //     Right Bumper/6:...............Right Hanger Up
 //     Right Trigger/8:..............Right Hanger Down
 //     Tophat/D-pad
-//       Up/0:.......................
-//       Down/4:.....................
+//       Up/0:.......................Paw up
+//       Down/4:.....................Paw down
 //       Left/6:.....................
 //       Right/2:....................
 //
@@ -213,7 +216,7 @@ void updateJoystickInput(teleopState *state) {
 
 	if (joyButton(state->joy.joy2_Buttons, 7)) {
 		state->rightHangSpeed = 100;
-		state->LEDBitmask = state->LEDBitmask | B4;
+		state->LEDBitmask = state->LEDBitmask | B3;
 	} else if (joyButton(state->joy.joy2_Buttons, 5)) {
 		state->rightHangSpeed = -100;
 	} else {
@@ -222,7 +225,7 @@ void updateJoystickInput(teleopState *state) {
 
 	if (joyButton(state->joy.joy2_Buttons, 8)) {
 		state->leftHangSpeed = 100;
-		state->LEDBitmask = state->LEDBitmask | B4;
+		state->LEDBitmask = state->LEDBitmask | B3;
 	} else if (joyButton(state->joy.joy2_Buttons, 6)) {
 		state->leftHangSpeed = -100;
 	} else {
@@ -247,20 +250,41 @@ void updateJoystickInput(teleopState *state) {
 		state->LEDBitmask = state->LEDBitmask | B5;
 	}
 
-	//wrist servo
-	if (joyButton(state->joy.joy2_Buttons, 1)) {
-		state->wristPos = WRISTIN;
-		state->robotWave = false;
-	} else if (joyButton(state->joy.joy2_Buttons, 2)) {
-		state->wristPos = WRISTOUT;
-		state->robotWave = false;
+	//eject autonomous block
+	if (joyButton(state->joy.joy2_Buttons, 2)) {
+		state->elbowPos = ELBOWOUT;
+		time1[T4] = 0;
+	}
+	if (state->elbowPos == ELBOWOUT) {
+		if (time1[T4] > 500) {
+			state->wristPos = WRISTOUT;
+		} else if (time1[T4] > 1000) {
+			state->wristPos = WRISTIN;
+			state->elbowPos = ELBOWIN;
+		}
 	}
 
-	//elbow servo
-	if (joyButton(state->joy.joy2_Buttons, 3)) {
-		state->elbowPos = ELBOWIN;
-	} else if (joyButton(state->joy.joy2_Buttons, 4)) {
-		state->elbowPos = ELBOWOUT;
+	//wrist servo
+	//if (joyButton(state->joy.joy2_Buttons, 1)) {
+	//	state->wristPos = WRISTIN;
+	//	state->robotWave = false;
+	//} else if (joyButton(state->joy.joy2_Buttons, 2)) {
+	//	state->wristPos = WRISTOUT;
+	//	state->robotWave = false;
+	//}
+
+	////elbow servo
+	//if (joyButton(state->joy.joy2_Buttons, 3)) {
+	//	state->elbowPos = ELBOWIN;
+	//} else if (joyButton(state->joy.joy2_Buttons, 4)) {
+	//	state->elbowPos = ELBOWOUT;
+	//}
+
+	//paw servo
+	if (state->joy.joy2_TopHat == 0) {
+		state->pawServoPos = PAWSERVOUP;
+	} else if (state->joy.joy2_TopHat == 4) {
+		state->pawServoPos = PAWSERVODOWN;
 	}
 
 	//robot waving
@@ -322,6 +346,7 @@ void updateRobot(teleopState *state) {
 	motor[leftHang]=state->leftHangSpeed;
 	motor[rightHang]=state->rightHangSpeed;
 	motor[flag]=state->flagSpeed;
+	servo[pawServo] = state->pawServoPos;
 	servo[flagServo] = state->flagServoPos;
 	servo[wrist]=state->wristPos;
 	servo[elbow]=state->elbowPos;
