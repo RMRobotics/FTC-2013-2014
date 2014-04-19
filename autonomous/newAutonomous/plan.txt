@@ -1,0 +1,13 @@
+Functions;
+DRIVE()
+	stopConditions: hit line, num millisecs
+TURN()
+	stopConditions: pass line, num degrees
+FIXTURN()
+	stopConditions: hit line
+LINEFOLLOW()
+	stopConditions: IR trigger, sonar trigger
+SCOREBLOCK()
+	stopConditions: block scored
+END()
+	stopConditions: n/a, exits program
