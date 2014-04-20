@@ -89,5 +89,10 @@ task main() {
 	// Turn until parallel to DE
 	turnDegreesCW(&robot, -TURNSPEED, 40);
 	// Drive to E
-	driveStraightUntilAccel(&robot, -DRIVESPEED);
+	driveStraightUntilOnRamp(&robot, -DRIVESPEED);
+	// If E was not actually reached, keep driving until it is
+	if (!onRamp(&robot))
+	{
+		driveStraightUntilOnRamp(&robot, -DRIVESPEED);
+	}
 }

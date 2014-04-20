@@ -1,4 +1,5 @@
 // task for maintaing running average of accelerometer readings
+
 float pitchAvg;
 task trackAccelerometerReadings()
 {
@@ -20,6 +21,7 @@ task trackAccelerometerReadings()
 		instPitch[0] = acos(instZAccel/(sqrt(pow(instXAccel, 2) + pow(instYAccel, 2) + pow(instZAccel, 2)))) * 180.0 / PI;
 		pitchSum += instPitch[0];
 		pitchAvg = pitchSum/TRACK_PAST_N_VALUES;
+
 		string a = instXAccel;
 		string b = instYAccel;
 		string c = instZAccel;
@@ -32,6 +34,7 @@ task trackAccelerometerReadings()
 		nxtDisplayTextLine(4, d);
 		nxtDisplayTextLine(5, e);
 		nxtDisplayTextLine(6, f);
+
 		wait1Msec(20);
 	}
 }
